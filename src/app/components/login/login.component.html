@@ -1,0 +1,20 @@
+<div class="login-container">
+  <div class="logo">
+    <i class="fas fa-bolt"></i> FLEXBIDEYA
+  </div>
+  <h2>Connexion</h2>
+  <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+    <div class="form-group">
+      <label>Nom d'utilisateur ou email</label>
+      <input type="text" formControlName="username" class="form-control" />
+    </div>
+    <div class="form-group">
+      <label>Mot de passe</label>
+      <input type="password" formControlName="password" class="form-control" />
+    </div>
+    <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+    <button type="submit" class="btn btn-primary">Se connecter</button>
+  </form>
+  <div class="divider">ou</div>
+  <button class="btn btn-outline" (click)="router.navigate(['/register'])">Créer un compte</button>
+</div>

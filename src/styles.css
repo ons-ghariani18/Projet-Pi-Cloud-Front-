@@ -1,1 +1,89 @@
-/* You can add global styles to this file, and also import other style files */
+body {
+  background: #f9fafb;
+  font-family: 'Inter', sans-serif;
+}
+.login-container, .register-container {
+  max-width: 460px;
+  margin: 2rem auto;
+  background: white;
+  border-radius: 1.5rem;
+  padding: 2rem;
+  box-shadow: 0 20px 35px -8px rgba(0,0,0,0.08);
+  border: 1px solid rgba(139,92,246,0.2);
+}
+.logo {
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 700;
+  background: linear-gradient(125deg, #1e3a8a, #8b5cf6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 1.5rem;
+}
+.form-group {
+  margin-bottom: 1rem;
+}
+.form-control {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+}
+.form-control:focus {
+  border-color: #8b5cf6;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(139,92,246,0.1);
+}
+.btn-primary {
+  background: linear-gradient(105deg, #8b5cf6, #a78bfa);
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  width: 100%;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-outline {
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  padding: 0.75rem;
+  width: 100%;
+  border-radius: 0.75rem;
+  font-weight: 500;
+}
+.error {
+  color: #b91c1c;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+.alert {
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  margin: 1rem 0;
+}
+.alert-danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.alert-success {
+  background: #dcfce7;
+  color: #15803d;
+}
+.divider {
+  text-align: center;
+  margin: 1rem 0;
+  position: relative;
+  color: #94a3b8;
+}
+.divider::before, .divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: #e2e8f0;
+}
+.divider::before { left: 0; }
+.divider::after { right: 0; }
