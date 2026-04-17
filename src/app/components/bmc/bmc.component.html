@@ -42,8 +42,7 @@
           <div class="notes" 
                cdkDropList
                [cdkDropListData]="block.notes"
-               (cdkDropListDropped)="drop($event)"
-               [class.horizontal]="block.id === 'costs' || block.id === 'revenues'">
+               (cdkDropListDropped)="drop($event)">
             <div class="note" *ngFor="let n of block.notes; let i = index" cdkDrag>
               {{n}}
               <span class="delete" (click)="removeNote(block.id, i)">×</span>
