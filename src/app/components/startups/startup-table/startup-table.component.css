@@ -1,0 +1,54 @@
+.table-card { background: var(--white); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.table-filters {
+  display: flex; gap: 8px; padding: 16px 20px; border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.filter-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 8px; border: 1.5px solid var(--border);
+  background: white; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+  color: var(--muted2); cursor: pointer; transition: all .15s;
+}
+.filter-btn:hover { border-color: var(--purple); color: var(--purple); }
+.filter-btn.active { border-color: var(--purple); background: var(--purple-soft); color: var(--purple); }
+.filter-count {
+  background: var(--purple); color: white; font-size: 11px; font-weight: 700;
+  padding: 1px 6px; border-radius: 10px;
+}
+.filter-btn:not(.active) .filter-count { background: var(--border); color: var(--muted2); }
+
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.6px; color: var(--muted); padding: 12px 20px;
+  border-bottom: 1px solid var(--border); background: var(--bg);
+}
+tbody tr { border-bottom: 1px solid var(--border); transition: background .12s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--purple-soft); }
+tbody td { padding: 14px 20px; font-size: 14px; vertical-align: middle; }
+
+.td-startup { font-weight: 700; color: var(--text); }
+.td-sub { font-size: 12px; color: var(--muted); font-weight: 400; }
+.td-sector {
+  display: inline-flex; align-items: center;
+  background: var(--purple-light); color: var(--purple);
+  font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px;
+}
+
+.status-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 20px;
+}
+.status-pill::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; }
+.status-pill.approved { background: #D1FAE5; color: #065F46; }
+.status-pill.pending  { background: #FEF3C7; color: #92400E; }
+.status-pill.rejected { background: #FEE2E2; color: #991B1B; }
+
+.btn-action {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--purple); color: white; border: none; border-radius: 8px;
+  padding: 8px 14px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: background .15s;
+}
+.btn-action:hover { background: var(--purple-hover); }

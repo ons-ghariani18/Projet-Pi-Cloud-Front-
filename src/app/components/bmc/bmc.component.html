@@ -1,0 +1,103 @@
+<div class="page-wrapper">
+  
+  <app-sidebar></app-sidebar>
+
+  <div class="content-container">
+    <app-topnav></app-topnav>
+
+    <div class="main-content">
+      <div class="bmc-header">
+        <div>
+          <h1>Business Model Canvas</h1>
+          <p>Définissez votre stratégie et votre modèle économique</p>
+        </div>
+        <div class="bmc-actions">
+          <button class="btn-save-all" (click)="saveBmc()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+              <polyline points="17 21 17 13 7 13 7 21" />
+              <polyline points="7 3 7 8 15 8" />
+            </svg>
+            Sauvegarder
+          </button>
+          
+          <button class="btn-print">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Exporter PDF
+          </button>
+        </div>
+      </div>
+
+      <div class="bmc-grid" cdkDropListGroup>
+        <div class="bmc-block" *ngFor="let block of blocks" 
+             [style.background]="block.color"
+             [style.color]="block.textColor"
+             [class]="block.id">
+          <div class="block-header">
+            <span class="icon" (click)="openNoteModal(block.id)">{{block.icon}}</span>
+            <h3>{{block.title}}</h3>
+            <button class="add-btn" (click)="openNoteModal(block.id)">+</button>
+          </div>
+          <p class="desc">{{block.desc}}</p>
+          <div class="notes" 
+               cdkDropList
+               [cdkDropListData]="block.notes"
+               (cdkDropListDropped)="drop($event)"
+               [class.horizontal]="block.id === 'costs' || block.id === 'revenues'">
+            <div class="note" *ngFor="let n of block.notes; let i = index" cdkDrag>
+              {{n}}
+              <span class="delete" (click)="removeNote(block.id, i)">×</span>
+              <div class="drag-placeholder" *cdkDragPlaceholder></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL NOTE PERSONNALISÉ (MAGIQUE) -->
+  <div class="note-modal-overlay" *ngIf="isModalOpen" (click)="closeModal()">
+    <div class="note-modal" 
+         (click)="$event.stopPropagation()"
+         [style.border-top-color]="currentBlock?.textColor"
+         [style.box-shadow]="'0 30px 60px -12px ' + currentBlock?.textColor + '33'">
+      
+      <div class="modal-header-magic">
+        <div>
+          <h3 [style.color]="currentBlock?.textColor">{{currentBlock?.title}}</h3>
+          <p class="modal-subtitle">Ajouter une nouvelle idée stratégique</p>
+        </div>
+        <button class="close-btn" (click)="closeModal()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <textarea 
+          [(ngModel)]="newNoteText" 
+          placeholder="Ex: Partenariat avec une banque locale..." 
+          autofocus
+          (keyup.enter)="saveNote()"
+        ></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeModal()">Annuler</button>
+        <button class="btn-save" 
+                [style.background]="currentBlock?.textColor"
+                (click)="saveNote()">
+          Ajouter au Canvas ✨
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANIMATION EMOJI ZOOM -->
+  <div class="icon-animating" *ngIf="explodingEmoji">
+    {{explodingEmoji}}
+  </div>
+
+  <!-- FLÈCHE DYNAMIQUE -->
+  <div class="nav-arrow">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="7 13 12 18 17 13"/><polyline points="7 6 12 11 17 6"/></svg>
+  </div>
+
+</div>

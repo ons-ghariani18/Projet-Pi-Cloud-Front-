@@ -1,0 +1,49 @@
+<div class="page-wrapper">
+  
+  <app-sidebar></app-sidebar>
+
+  <div class="content-container">
+    <app-topnav></app-topnav>
+
+    <div class="main-content">
+      <!-- GREETING -->
+      <div class="greeting">
+        <h2>Bonjour, Ahmed <span>👋</span></h2>
+        <p>Voici un résumé de votre activité aujourd'hui</p>
+      </div>
+
+      <!-- STATS -->
+      <app-stat-cards></app-stat-cards>
+
+      <!-- RECENT STARTUPS -->
+      <div class="section-header">
+        <div>
+          <h3>Startups récentes</h3>
+          <p>Aperçu rapide de vos startups</p>
+        </div>
+        <button class="btn-new" (click)="addModal.open()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nouvelle startup
+        </button>
+      </div>
+
+      <app-startup-cards></app-startup-cards>
+
+      <!-- MANAGEMENT TABLE -->
+      <div class="section-header" style="margin-top:8px">
+        <div>
+          <h3>Gestion des Startups</h3>
+          <p>Approuvez, rejetez ou remettez en attente les startups</p>
+        </div>
+      </div>
+
+      <app-startup-table (updateStatus)="onOpenStatusModal($event)"></app-startup-table>
+
+    </div><!-- end main-content -->
+  </div><!-- end content-container -->
+</div><!-- end page-wrapper -->
+
+<!-- MODALS -->
+<app-add-startup-modal #addModal></app-add-startup-modal>
+<app-status-modal #statusModal></app-status-modal>
+<app-toast></app-toast>

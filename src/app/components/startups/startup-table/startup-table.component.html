@@ -1,0 +1,44 @@
+<div class="table-card">
+  <div class="table-filters">
+    <button class="filter-btn" [class.active]="currentFilter === 'all'" (click)="setFilter('all')">
+      Tous <span class="filter-count">{{ counts.all }}</span>
+    </button>
+    <button class="filter-btn" [class.active]="currentFilter === 'approved'" (click)="setFilter('approved')">
+      ✔ Approuvées <span class="filter-count">{{ counts.approved }}</span>
+    </button>
+    <button class="filter-btn" [class.active]="currentFilter === 'pending'" (click)="setFilter('pending')">
+      ⏳ En attente <span class="filter-count">{{ counts.pending }}</span>
+    </button>
+    <button class="filter-btn" [class.active]="currentFilter === 'rejected'" (click)="setFilter('rejected')">
+      ⊘ Rejetées <span class="filter-count">{{ counts.rejected }}</span>
+    </button>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Startup</th>
+        <th>Secteur</th>
+        <th>Dates</th>
+        <th>Statut</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let s of filteredStartups; let i = index">
+        <td>
+          <div class="td-startup">{{ s.nom }}</div>
+          <div class="td-sub">{{ s.sub }}</div>
+        </td>
+        <td><span class="td-sector">{{ s.secteur }}</span></td>
+        <td style="font-size:13px;color:var(--muted2)" [innerHTML]="s.dates ? s.dates.replace('\n', '<br>') : ''"></td>
+        <td><span class="status-pill" [ngClass]="s.status">{{ s.status === 'approved' ? 'Approuvée' : (s.status === 'pending' ? 'En attente' : 'Rejetée') }}</span></td>
+        <td>
+          <button class="btn-action" (click)="onUpdateStatus(s, i)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Modifier statut
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

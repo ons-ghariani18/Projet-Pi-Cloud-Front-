@@ -1,0 +1,25 @@
+<div class="modal-overlay" [class.show]="isVisible" (click)="closeOnOutsideClick($event)">
+  <div class="modal" style="width:380px">
+    <div class="modal-header">
+      <div class="modal-title">Modifier le statut</div>
+      <button class="modal-close" (click)="close()">×</button>
+    </div>
+    <div class="modal-body" style="padding:16px 20px">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px" *ngIf="startup">Startup : <strong>{{ startup.nom }}</strong></p>
+      <div class="status-modal">
+        <div class="status-option" (click)="setStatus('approved')">
+          <div class="status-dot" style="background:var(--green)"></div>
+          <div><div class="status-option-label">Approuvée</div><div class="status-option-sub">La startup est validée et active</div></div>
+        </div>
+        <div class="status-option" (click)="setStatus('pending')">
+          <div class="status-dot" style="background:var(--orange)"></div>
+          <div><div class="status-option-label">En attente</div><div class="status-option-sub">En cours de révision par l'équipe</div></div>
+        </div>
+        <div class="status-option" (click)="setStatus('rejected')">
+          <div class="status-dot" style="background:var(--red)"></div>
+          <div><div class="status-option-label">Rejetée</div><div class="status-option-sub">La startup n'a pas été retenue</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
