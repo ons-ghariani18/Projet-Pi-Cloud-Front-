@@ -8,7 +8,7 @@
     <div class="main-content">
       <!-- GREETING -->
       <div class="greeting">
-        <h2>Bonjour, Ahmed <span>👋</span></h2>
+        <h2>Bonjour, {{ currentUsername }} <span>👋</span></h2>
         <p>Voici un résumé de votre activité aujourd'hui</p>
       </div>
 
@@ -27,7 +27,7 @@
         </button>
       </div>
 
-      <app-startup-cards></app-startup-cards>
+      <app-startup-cards (edit)="onOpenEditModal($event)"></app-startup-cards>
 
       <!-- MANAGEMENT TABLE -->
       <div class="section-header" style="margin-top:8px">
@@ -37,7 +37,7 @@
         </div>
       </div>
 
-      <app-startup-table (updateStatus)="onOpenStatusModal($event)"></app-startup-table>
+      <app-startup-table (updateStatus)="onOpenStatusModal($event)" (edit)="onOpenEditModal($event)"></app-startup-table>
 
     </div><!-- end main-content -->
   </div><!-- end content-container -->
@@ -46,4 +46,5 @@
 <!-- MODALS -->
 <app-add-startup-modal #addModal></app-add-startup-modal>
 <app-status-modal #statusModal></app-status-modal>
+<app-edit-startup-modal [startup]="selectedStartupToEdit" (closed)="onCloseEditModal()"></app-edit-startup-modal>
 <app-toast></app-toast>

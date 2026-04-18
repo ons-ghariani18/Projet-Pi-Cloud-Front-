@@ -45,10 +45,22 @@ tbody td { padding: 14px 20px; font-size: 14px; vertical-align: middle; }
 .status-pill.pending  { background: #FEF3C7; color: #92400E; }
 .status-pill.rejected { background: #FEE2E2; color: #991B1B; }
 
+.td-actions { min-width: 180px; }
+.actions-group { display: flex; align-items: center; gap: 8px; }
+
+.btn-action-outline {
+  width: 34px; height: 34px; border-radius: 8px;
+  border: 1.5px solid var(--border); background: white;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all .2s; color: var(--muted2);
+}
+.btn-action-outline:hover { border-color: var(--purple); color: var(--purple); transform: translateY(-2px); }
+.btn-action-outline.delete:hover { border-color: #ef4444; color: #ef4444; }
+
 .btn-action {
   display: flex; align-items: center; gap: 6px;
   background: var(--purple); color: white; border: none; border-radius: 8px;
-  padding: 8px 14px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
-  cursor: pointer; transition: background .15s;
+  padding: 8px 14px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all .2s;
 }
-.btn-action:hover { background: var(--purple-hover); }
+.btn-action:hover { background: var(--purple-hover); transform: translateY(-2px); }

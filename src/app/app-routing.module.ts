@@ -10,7 +10,8 @@ const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
   { path: 'startups', component: StartupsPageComponent, canActivate: [AuthGuard] },
-  { path: 'bmc',      component: BmcComponent,          canActivate: [AuthGuard] },
+  { path: 'bmc/:id',  component: BmcComponent,          canActivate: [AuthGuard] },
+  { path: 'bmc',      component: BmcComponent,          canActivate: [AuthGuard] }, // Garder la route de base au cas où
   { path: '**',       redirectTo: 'login' }
   
 ];

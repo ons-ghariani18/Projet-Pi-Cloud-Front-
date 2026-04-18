@@ -16,6 +16,7 @@ import { StartupTableComponent } from './components/startups/startup-table/start
 import { StartupCardsComponent } from './components/startups/startup-cards/startup-cards.component';
 import { StatusModalComponent } from './components/startups/status-modal/status-modal.component';
 import { AddStartupModalComponent } from './components/startups/add-startup-modal/add-startup-modal.component';
+import { EditStartupModalComponent } from './components/startups/edit-startup-modal/edit-startup-modal.component';
 import { BmcComponent } from './components/bmc/bmc.component';
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
@@ -34,6 +35,7 @@ import { AuthInterceptor } from './interceptors/auth.interceptor';
     StartupCardsComponent,
     StatusModalComponent,
     AddStartupModalComponent,
+    EditStartupModalComponent,
     BmcComponent
   ],
   imports: [

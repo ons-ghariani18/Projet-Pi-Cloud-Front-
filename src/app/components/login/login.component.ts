@@ -29,8 +29,9 @@ export class LoginComponent {
     this.authService.login(this.loginForm.value).subscribe({
       next: (res) => {
         this.authService.saveToken(res.token);
-        // Rediriger selon le rôle ou vers un dashboard
-        this.router.navigate(['/dashboard']);
+        this.authService.saveUser(res);
+        // Rediriger vers l'interface startups
+        this.router.navigate(['/startups']);
       },
       error: (err) => {
         this.errorMessage = err.error?.message || 'Échec de connexion';

@@ -16,6 +16,7 @@
   font-size: 34px;
   font-weight: 850;
   color: #1e293b;
+  margin-bottom: 4px;
   letter-spacing: -1.2px;
 }
 
@@ -23,12 +24,87 @@
   font-size: 16px;
   color: #64748b;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.startup-select {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 6px 16px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.2s;
+  outline: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.startup-select:focus {
+  border-color: #1e293b;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transform: translateY(-1px);
+}
+
+.startup-select option {
+  font-weight: 600;
+  padding: 10px;
 }
 
 /* ── BOUTONS ENTÊTE ── */
 .bmc-actions {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 24px;
+}
+
+.progress-container {
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+}
+
+.progress-info .percentage {
+  color: #1e293b;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+.progress-track {
+  width: 100%;
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #a855f7);
+  border-radius: 10px;
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
 }
 
 .btn-save-all {
@@ -165,7 +241,7 @@
 
 .note {
   background: rgba(255, 255, 255, 0.6);
-  padding: 12px 18px;
+  padding: 10px 16px;
   border-radius: 18px;
   font-size: 13.5px;
   font-weight: 700;
@@ -175,6 +251,19 @@
   justify-content: space-between;
   align-items: center;
   transition: all 0.2s;
+  cursor: grab;
+}
+
+.note-text {
+  flex: 1;
+  outline: none;
+  padding-right: 8px;
+  min-height: 1em;
+  cursor: text;
+}
+
+.note-text:focus {
+  color: #000;
 }
 
 .note:hover {

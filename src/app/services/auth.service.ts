@@ -6,7 +6,7 @@ import { RegisterRequest } from '../models/register-request';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private apiUrl = 'http://localhost:8080/api/auth'; // adaptez l'URL
+  private apiUrl = 'http://localhost:8080/api/auth'; 
 
   constructor(private http: HttpClient) {}
 
@@ -18,7 +18,6 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/signup`, user);
   }
 
-  // Stocker le token et les infos utilisateur
   saveToken(token: string): void {
     localStorage.setItem('authToken', token);
   }
@@ -27,5 +26,16 @@ export class AuthService {
     return localStorage.getItem('authToken');
   }
 
-  // etc.
+  saveUser(user: any): void {
+    localStorage.setItem('currentUser', JSON.stringify(user));
+  }
+
+  getUser(): any {
+    const user = localStorage.getItem('currentUser');
+    return user ? JSON.parse(user) : null;
+  }
+
+  logout(): void {
+    localStorage.clear();
+  }
 }

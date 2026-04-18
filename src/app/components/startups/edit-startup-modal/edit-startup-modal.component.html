@@ -1,0 +1,51 @@
+<div class="edit-modal-overlay" *ngIf="startup" (click)="onClose()">
+  <div class="edit-modal-content" (click)="$event.stopPropagation()">
+    <button class="btn-close" (click)="onClose()">&times;</button>
+    
+    <div class="modal-header">
+      <h2>Modifier Startup</h2>
+      <p>Mettre à jour les informations de {{ startup.nom }}</p>
+    </div>
+
+    <form class="modal-body" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label>Nom de la Startup</label>
+        <input type="text" [(ngModel)]="startup.nom" name="nom" placeholder="Ex: FlexBidaya">
+      </div>
+
+      <div class="form-group">
+        <label>Secteur d'activité</label>
+        <select [(ngModel)]="startup.secteur" name="secteur">
+          <option value="Fintech">Fintech</option>
+          <option value="SaaS">SaaS</option>
+          <option value="Healthtech">Healthtech</option>
+          <option value="Edtech">Edtech</option>
+          <option value="Agrotech">Agrotech</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Budget Initial (TND)</label>
+          <input type="number" [(ngModel)]="startup.budgetInitial" name="budget">
+        </div>
+        <div class="form-group">
+          <label>MRR Actuel (TND)</label>
+          <input type="number" [(ngModel)]="startup.mrr" name="mrr">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Description / À propos</label>
+        <textarea [(ngModel)]="startup.description" name="description" rows="4" placeholder="Décrivez la vision de la startup..."></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="onClose()">Annuler</button>
+        <button type="submit" class="btn-save" [disabled]="isLoading">
+          {{ isLoading ? 'Enregistrement...' : 'Enregistrer les modifications' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

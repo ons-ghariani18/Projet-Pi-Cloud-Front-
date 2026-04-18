@@ -7,12 +7,28 @@
 
     <div class="main-content">
       <div class="bmc-header">
-        <div>
+        <div class="header-left">
           <h1>Business Model Canvas</h1>
-          <p>Définissez votre stratégie et votre modèle économique</p>
+          <p>Définissez votre stratégie pour 
+            <select class="startup-select" [(ngModel)]="startupId" (change)="onStartupChange($event)">
+              <option [ngValue]="null" disabled>Choisir une startup...</option>
+              <option *ngFor="let s of allStartups" [ngValue]="s.id">{{s.nom}}</option>
+            </select>
+          </p>
         </div>
         <div class="bmc-actions">
-          <button class="btn-save-all" (click)="saveBmc()">
+          <!-- PROGRESS BAR -->
+          <div class="progress-container">
+            <div class="progress-info">
+              <span>Complétion du Business Plan</span>
+              <span class="percentage">{{ getProgress() }}%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" [style.width.%]="getProgress()"></div>
+            </div>
+          </div>
+
+          <button class="btn-save-all" (click)="saveBmc()" [disabled]="isLoading">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
               <polyline points="17 21 17 13 7 13 7 21" />
@@ -44,7 +60,14 @@
                [cdkDropListData]="block.notes"
                (cdkDropListDropped)="drop($event)">
             <div class="note" *ngFor="let n of block.notes; let i = index" cdkDrag>
-              {{n}}
+              <span class="note-text" 
+                    contenteditable="true" 
+                    (mousedown)="$event.stopPropagation()"
+                    (click)="$event.stopPropagation()"
+                    (blur)="updateNote(block.id, i, $event)"
+                    (keydown.enter)="onEnter($event)">
+                {{n}}
+              </span>
               <span class="delete" (click)="removeNote(block.id, i)">×</span>
               <div class="drag-placeholder" *cdkDragPlaceholder></div>
             </div>

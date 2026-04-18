@@ -32,11 +32,19 @@
         <td><span class="td-sector">{{ s.secteur }}</span></td>
         <td style="font-size:13px;color:var(--muted2)" [innerHTML]="s.dates ? s.dates.replace('\n', '<br>') : ''"></td>
         <td><span class="status-pill" [ngClass]="s.status">{{ s.status === 'approved' ? 'Approuvée' : (s.status === 'pending' ? 'En attente' : 'Rejetée') }}</span></td>
-        <td>
-          <button class="btn-action" (click)="onUpdateStatus(s, i)">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            Modifier statut
-          </button>
+        <td class="td-actions">
+          <div class="actions-group">
+            <button class="btn-action-outline edit" (click)="onEdit(s)" title="Modifier">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="btn-action-outline delete" (click)="onDelete(s.id)" title="Supprimer">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+            <button class="btn-action status" (click)="onUpdateStatus(s, i)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Statut
+            </button>
+          </div>
         </td>
       </tr>
     </tbody>

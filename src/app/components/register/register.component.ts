@@ -5,7 +5,8 @@ import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-register',
-  templateUrl: './register.component.html'
+  templateUrl: './register.component.html',
+  styleUrls: ['./register.component.css']
 })
 export class RegisterComponent {
   registerForm: FormGroup;
@@ -86,8 +87,16 @@ export class RegisterComponent {
 
     this.authService.register(payload).subscribe({
       next: () => {
-        this.successMessage = 'Inscription réussie ! Vous pouvez maintenant vous connecter.';
-        setTimeout(() => this.router.navigate(['/login']), 2000);
+        // Sauvegarder l'info utilisateur pour l'accueil personnalisé
+        this.authService.saveUser({ username: this.registerForm.value.username });
+
+        if (this.registerForm.value.role === 'ENTREPRENEUR') {
+          this.successMessage = 'Inscription réussie ! Préparation de votre espace startup...';
+          setTimeout(() => this.router.navigate(['/startups']), 1500);
+        } else {
+          this.successMessage = 'Inscription réussie ! Vous pouvez maintenant vous connecter.';
+          setTimeout(() => this.router.navigate(['/login']), 2000);
+        }
       },
       error: (err) => {
         // Improved error handling: backend may return plain string or object with message

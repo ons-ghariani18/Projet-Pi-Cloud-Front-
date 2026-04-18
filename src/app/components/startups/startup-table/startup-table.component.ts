@@ -9,6 +9,7 @@ import { Startup } from '../../../models/startup';
 })
 export class StartupTableComponent implements OnInit {
   @Output() updateStatus = new EventEmitter<{startup: Startup, index: number}>();
+  @Output() edit = new EventEmitter<Startup>();
 
   allStartups: Startup[] = [];
   filteredStartups: Startup[] = [];
@@ -46,8 +47,21 @@ export class StartupTableComponent implements OnInit {
   }
 
   onUpdateStatus(startup: Startup, index: number): void {
-    // We need the absolute index in the service array
     const absoluteIndex = this.allStartups.indexOf(startup);
     this.updateStatus.emit({ startup, index: absoluteIndex });
+  }
+
+  onEdit(s: Startup): void {
+    this.edit.emit(s);
+  }
+
+  onDelete(id: number | undefined): void {
+    if (!id) return;
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette startup ?')) {
+      this.startupService.deleteStartup(id).subscribe({
+        next: () => console.log('Startup supprimée'),
+        error: (err: any) => console.error('Erreur lors de la suppression', err)
+      });
+    }
   }
 }

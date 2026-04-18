@@ -50,8 +50,6 @@ export class StartupService {
   }
 
   updateStartupStatus(id: number, status: 'approved' | 'pending' | 'rejected'): Observable<Startup> {
-    // Note: If the backend doesn't have a status field, we might need to handle this differently.
-    // For now, we update the status in the UI but the backend might just store it as is.
     return this.http.put<Startup>(`${this.apiUrl}/${id}/status`, { status }).pipe(
       map(s => this.augmentStartup(s)),
       tap(updatedStartup => {
@@ -61,6 +59,29 @@ export class StartupService {
           current[index] = updatedStartup;
           this.startupsSubject.next([...current]);
         }
+      })
+    );
+  }
+
+  updateStartup(id: number, startup: Startup): Observable<Startup> {
+    return this.http.put<Startup>(`${this.apiUrl}/${id}`, startup).pipe(
+      map(s => this.augmentStartup(s)),
+      tap(updatedStartup => {
+        const current = this.startupsSubject.value;
+        const index = current.findIndex(s => s.id === id);
+        if (index !== -1) {
+          current[index] = updatedStartup;
+          this.startupsSubject.next([...current]);
+        }
+      })
+    );
+  }
+
+  deleteStartup(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+      tap(() => {
+        const current = this.startupsSubject.value;
+        this.startupsSubject.next(current.filter(s => s.id !== id));
       })
     );
   }
