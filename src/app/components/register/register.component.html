@@ -49,13 +49,39 @@
             <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
             <select formControlName="role" (change)="onRoleChange($event)">
               <option value="">-- Sélectionnez --</option>
-              <option value="ENTREPRENEUR">Entrepreneur</option>
-              <option value="EXPERT">Expert / Mentor</option>
-              <option value="ORGANISATEUR">Organisateur</option>
+              <option value="entrepreneur">Entrepreneur</option>
+              <option value="expert">Expert / Mentor</option>
+              <option value="organisateur">Organisateur</option>
             </select>
           </div>
         </div>
       </div>
+
+      <!-- Specific fields for Roles -->
+      <div class="form-group" *ngIf="selectedRole === 'entrepreneur'" style="margin-bottom: 20px;">
+        <label>Description de la startup</label>
+        <div class="input-wrapper">
+          <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <input type="text" formControlName="startupDescription" placeholder="Parlez-nous de votre projet..." />
+        </div>
+      </div>
+
+      <div class="form-group" *ngIf="selectedRole === 'expert'" style="margin-bottom: 20px;">
+        <label>Domaine d'expertise</label>
+        <div class="input-wrapper">
+          <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <input type="text" formControlName="domaine" placeholder="Ex: Marketing, IA, Finance..." />
+        </div>
+      </div>
+
+      <div class="form-group" *ngIf="selectedRole === 'organisateur'" style="margin-bottom: 20px;">
+        <label>Nom de l'organisation</label>
+        <div class="input-wrapper">
+          <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3z"/></svg>
+          <input type="text" formControlName="organisation" placeholder="Ex: Technopark, Incubateur..." />
+        </div>
+      </div>
+
 
       <div class="form-row">
         <div class="form-group">

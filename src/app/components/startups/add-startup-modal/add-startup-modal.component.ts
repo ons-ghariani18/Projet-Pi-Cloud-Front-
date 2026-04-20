@@ -154,17 +154,17 @@ export class AddStartupModalComponent implements OnInit {
       return isNaN(n) ? 0 : n;
     };
 
-    // ✅ EXACT format from Postman (snake_case)
+    // ✅ camelCase to match Spring Boot defaults and your Java entities
     const payload: any = {
       nom:            this.form.name || 'Nouvelle Startup',
       description:    this.form.description || '',
       secteur:        this.mapSector(this.form.sector),
       stade:          this.mapStage(this.form.stage),
       statut:         'Active',
-      date_creation:  this.form.creationDate || todayStr,
-      type_client:    (this.form.clientType || 'B2B').toUpperCase(),
+      dateCreation:   this.form.creationDate || todayStr,
+      typeClient:     (this.form.clientType || 'B2B').toUpperCase(),
       mrr:            toNum(this.form.mrr),
-      budget_initial: toNum(this.form.budget)
+      budgetInitial:  toNum(this.form.budget)
     };
 
     if (this.membersList.length > 0) {
@@ -176,17 +176,15 @@ export class AddStartupModalComponent implements OnInit {
             .replace(/\s+/g, '.')
             .toLowerCase();
           
-          // Mapping exact pour correspondre à la BD : Tempsplein, Tempspartiel, Freelance, Advisor
-          let statut_membre = (m.statut || 'Tempsplein').trim();
-          if (statut_membre === 'Temps plein') statut_membre = 'Tempsplein';
-          if (statut_membre === 'Temps partiel') statut_membre = 'Tempspartiel';
-          // On retire le .toUpperCase() car la BD est en TitleCase
+          let statutMembre = (m.statut || 'Tempsplein').trim();
+          if (statutMembre === 'Temps plein') statutMembre = 'Tempsplein';
+          if (statutMembre === 'Temps partiel') statutMembre = 'Tempspartiel';
 
           return {
-            nom_prenom:     m.nom || 'Membre',
+            nomPrenom:     m.nom || 'Membre',
             role:           this.normalizeRole(m.role),
             email:          m.email || `${cleanName}@flexbidaya.tn`,
-            statut_membre:  statut_membre
+            statutMembre:   statutMembre
           };
         });
     }
@@ -194,8 +192,8 @@ export class AddStartupModalComponent implements OnInit {
     if (this.form.hasCredit) {
       payload.credits = [{
         montant:       toNum(this.form.credit.montant),
-        taux_interet:  toNum(this.form.credit.taux),
-        duree_mois:    Math.floor(toNum(this.form.credit.duree)) || 1,
+        tauxInteret:   toNum(this.form.credit.taux),
+        dureeMois:     Math.floor(toNum(this.form.credit.duree)) || 1,
         source:        this.normalizeSource(this.form.credit.source)
       }];
     }

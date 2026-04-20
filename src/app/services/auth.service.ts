@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { LoginRequest, LoginResponse } from '../models/login-request';
 import { RegisterRequest } from '../models/register-request';
 
@@ -10,25 +10,51 @@ export class AuthService {
 
   constructor(private http: HttpClient) {}
 
-  login(credentials: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.apiUrl}/signin`, credentials);
+  signin(credentials: LoginRequest): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.apiUrl}/signin`, credentials).pipe(
+      tap((res: any) => {
+        const jwt = res.jwt || res.token;
+        if (jwt) {
+          this.saveToken(jwt);
+          this.saveUser(res);
+        }
+      })
+    );
   }
 
-  register(user: RegisterRequest): Observable<any> {
+  signup(user: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/signup`, user);
   }
 
   saveToken(token: string): void {
-    localStorage.setItem('authToken', token);
+    localStorage.setItem('token', token);
+  }
+
+  saveMembreToken(token: string): void {
+    localStorage.setItem('membreToken', token);
   }
 
   getToken(): string | null {
-    return localStorage.getItem('authToken');
+    // Try both keys for backward compatibility or migration
+    let token = localStorage.getItem('token') || localStorage.getItem('authToken');
+    if (!token || token === 'undefined' || token === 'null') return null;
+    return token;
+  }
+
+  getMembreToken(): string | null {
+    return localStorage.getItem('membreToken');
+  }
+
+  isLoggedIn(): boolean {
+    return !!this.getToken();
   }
 
   saveUser(user: any): void {
-    localStorage.setItem('currentUser', JSON.stringify(user));
+    const jwt = user.jwt || user.token;
+    const { jwt: _, token: __, ...userWithoutToken } = user;
+    localStorage.setItem('currentUser', JSON.stringify(userWithoutToken));
   }
+
 
   getUser(): any {
     const user = localStorage.getItem('currentUser');
@@ -36,6 +62,18 @@ export class AuthService {
   }
 
   logout(): void {
-    localStorage.clear();
+    localStorage.removeItem('token');
+    localStorage.removeItem('membreToken');
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('currentStartupId');
+  }
+
+  saveCurrentStartupId(id: number): void {
+    localStorage.setItem('currentStartupId', id.toString());
+  }
+
+  getCurrentStartupId(): number | null {
+    const id = localStorage.getItem('currentStartupId');
+    return id ? +id : null;
   }
 }

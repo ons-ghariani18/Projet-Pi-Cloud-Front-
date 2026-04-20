@@ -10,7 +10,7 @@
         <div class="header-left">
           <h1>Business Model Canvas</h1>
           <p>Définissez votre stratégie pour 
-            <select class="startup-select" [(ngModel)]="startupId" (change)="onStartupChange($event)">
+            <select class="startup-select" [(ngModel)]="startupId" (ngModelChange)="onStartupChange()">
               <option [ngValue]="null" disabled>Choisir une startup...</option>
               <option *ngFor="let s of allStartups" [ngValue]="s.id">{{s.nom}}</option>
             </select>
@@ -37,9 +37,9 @@
             Sauvegarder
           </button>
           
-          <button class="btn-print">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-            Exporter PDF
+          <button class="btn-invite" (click)="openInviteModal()" style="background: #10b981; color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/></svg>
+            Inviter
           </button>
         </div>
       </div>
@@ -48,12 +48,28 @@
         <div class="bmc-block" *ngFor="let block of blocks" 
              [style.background]="block.color"
              [style.color]="block.textColor"
-             [class]="block.id">
+             [class]="block.id"
+             [ngClass]="{
+               'block-live': activeBlocks[block.id]?.isTyping,
+               'block-pending': activeBlocks[block.id]?.isPending
+             }">
+          
+          <!-- Badge membre actif -->
+          <div class="membre-presence" *ngIf="activeBlocks[block.id]">
+            <span class="presence-dot"></span>
+            {{ activeBlocks[block.id].membreNom }}
+            <span class="presence-status">
+              {{ activeBlocks[block.id].isTyping ? 'écrit...' : 'En attente' }}
+            </span>
+          </div>
+
           <div class="block-header">
             <span class="icon" (click)="openNoteModal(block.id)">{{block.icon}}</span>
             <h3>{{block.title}}</h3>
             <button class="add-btn" (click)="openNoteModal(block.id)">+</button>
           </div>
+
+          <!-- Contenu existant du bloc -->
           <p class="desc">{{block.desc}}</p>
           <div class="notes" 
                cdkDropList
@@ -72,12 +88,35 @@
               <div class="drag-placeholder" *cdkDragPlaceholder></div>
             </div>
           </div>
+
+          <!-- 3. ZONE DE COLLABORATION TEMPS RÉEL (Suggestion / Frappe) -->
+          <div class="live-suggestion" *ngIf="activeBlocks[block.id] && (activeBlocks[block.id].typingText || activeBlocks[block.id].isTyping || activeBlocks[block.id].isPending)">
+            <div class="suggestion-content">
+              <span class="suggestion-label" *ngIf="activeBlocks[block.id].isPending">PROPOSITION</span>
+              <span class="suggestion-text">
+                {{ activeBlocks[block.id].typingText || (activeBlocks[block.id].isTyping ? '...' : '') }}
+                <span class="cursor-blink" *ngIf="activeBlocks[block.id].isTyping">|</span>
+              </span>
+            </div>
+
+            <!-- ACTIONS INLINE (Subtilement intégrées) -->
+            <div class="block-actions" *ngIf="activeBlocks[block.id].isPending && activeBlocks[block.id].proposalId">
+              <button class="btn-approve-inline" (click)="onApprove(activeBlocks[block.id].proposalId!, block.id)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+                Approuver
+              </button>
+              <button class="btn-reject-inline" (click)="onReject(activeBlocks[block.id].proposalId!, block.id)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                Rejeter
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- MODAL NOTE PERSONNALISÉ (MAGIQUE) -->
+  <!-- MODAL NOTE PERSONNALISÉ -->
   <div class="note-modal-overlay" *ngIf="isModalOpen" (click)="closeModal()">
     <div class="note-modal" 
          (click)="$event.stopPropagation()"
@@ -112,12 +151,74 @@
     </div>
   </div>
 
+  <!-- INVITATION MODAL -->
+  <div class="note-modal-overlay" *ngIf="isInviteModalOpen" (click)="isInviteModalOpen = false">
+    <div class="note-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header-magic">
+        <h3>Inviter un membre</h3>
+        <button class="close-btn" (click)="isInviteModalOpen = false">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group" style="margin-bottom: 1rem;">
+          <label style="display:block;font-size:0.8rem;margin-bottom:0.4rem;font-weight:600">Nom & Prénom</label>
+          <input [(ngModel)]="inviteForm.nomPrenom" placeholder="Jean Dupont" style="width:100%;padding:0.75rem;border:1px solid #e2e8f0;border-radius:8px">
+        </div>
+        <div class="input-group" style="margin-bottom: 1rem;">
+          <label style="display:block;font-size:0.8rem;margin-bottom:0.4rem;font-weight:600">Email</label>
+          <input [(ngModel)]="inviteForm.email" placeholder="jean@email.com" style="width:100%;padding:0.75rem;border:1px solid #e2e8f0;border-radius:8px">
+        </div>
+        <div class="input-group">
+          <label style="display:block;font-size:0.8rem;margin-bottom:0.4rem;font-weight:600">Rôle</label>
+          <select [(ngModel)]="inviteForm.role" style="width:100%;padding:0.75rem;border:1px solid #e2e8f0;border-radius:8px;background:white">
+            <option value="Developpeur">Développeur</option>
+            <option value="Designer">Designer</option>
+            <option value="Marketing">Marketing</option>
+            <option value="Tempsplein">Temps plein</option>
+            <option value="Freelance">Freelance</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="isInviteModalOpen = false">Annuler</button>
+        <button class="btn-save" (click)="sendInvite()" style="background: #3b82f6">Envoyer l'invitation ✨</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROPOSALS MODAL -->
+  <div class="note-modal-overlay" *ngIf="isProposalsModalOpen" (click)="isProposalsModalOpen = false">
+    <div class="note-modal" (click)="$event.stopPropagation()" style="max-width: 600px;">
+      <div class="modal-header-magic">
+        <h3>Propositions des membres</h3>
+        <button class="close-btn" (click)="isProposalsModalOpen = false">×</button>
+      </div>
+      <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
+        <div *ngIf="proposals.length === 0" style="text-align:center;padding:2rem;color:#94a3b8">
+          Aucune proposition en attente.
+        </div>
+        <div *ngFor="let p of proposals" style="border:1px solid #e2e8f0;border-radius:12px;padding:1.25rem;margin-bottom:1rem;background:#f8fafc">
+          <div style="display:flex;justify-content:space-between;margin-bottom:0.75rem">
+            <span style="font-weight:700;color:#3b82f6">{{ p.member?.nomPrenom || 'Membre' }}</span>
+            <span style="font-size:0.7rem;background:#f1f5f9;padding:2px 8px;border-radius:10px">{{ p.blockName }}</span>
+          </div>
+          <div style="font-size:0.85rem;margin-bottom:1rem;background:white;padding:0.75rem;border-radius:8px">
+            <div style="color:#94a3b8;text-decoration:line-through;font-size:0.8rem">Ancien: {{ p.oldValue }}</div>
+            <div style="font-weight:500;color:#1e293b">Nouveau: {{ p.newValue }}</div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:0.75rem">
+            <button (click)="handleProposal(p, 'REJECTED')" style="padding:0.4rem 0.8rem;border:none;border-radius:6px;background:#fee2e2;color:#b91c1c;font-size:0.8rem;cursor:pointer">Rejeter</button>
+            <button (click)="handleProposal(p, 'APPROVED')" style="padding:0.4rem 0.8rem;border:none;border-radius:6px;background:#dcfce7;color:#15803d;font-size:0.8rem;cursor:pointer">Approuver</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ANIMATION EMOJI ZOOM -->
   <div class="icon-animating" *ngIf="explodingEmoji">
     {{explodingEmoji}}
   </div>
 
-  <!-- FLÈCHE DYNAMIQUE -->
   <div class="nav-arrow">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="7 13 12 18 17 13"/><polyline points="7 6 12 11 17 6"/></svg>
   </div>

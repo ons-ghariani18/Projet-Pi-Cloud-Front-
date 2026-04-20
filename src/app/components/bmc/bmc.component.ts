@@ -3,18 +3,35 @@ import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/dr
 import { ActivatedRoute, Router } from '@angular/router';
 import { BusinessPlanService, BusinessPlanDTO } from '../../services/business-plan.service';
 import { StartupService } from '../../services/startup.service';
+import { BmcProposal, Membre } from '../../models/membre';
+import { BmcWebSocketService } from '../../services/bmc-websocket.service';
+import { OnDestroy } from '@angular/core';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-bmc',
   templateUrl: './bmc.component.html',
   styleUrls: ['./bmc.component.css']
 })
-export class BmcComponent implements OnInit {
-  
+export class BmcComponent implements OnInit, OnDestroy {
+
   startupId: number | null = null;
   businessPlanId: number | null = null;
   isLoading = false;
   allStartups: any[] = []; // Liste pour le sélecteur
+
+  activeBlocks: {
+    [blockId: string]: {
+      membreNom?: string;
+      membre_nom?: string;
+      typingText?: string;
+      typing_text?: string;
+      isTyping: boolean;
+      isPending: boolean;
+      proposalId?: number;
+      proposal_id?: number;
+    }
+  } = {};
 
   blocks = [
     { id: 'partners', title: 'Partenaires Clés', icon: '🤝', color: '#EEF2FF', textColor: '#4338CA', desc: 'Réseau de fournisseurs et partenaires.', notes: [] as string[] },
@@ -29,17 +46,28 @@ export class BmcComponent implements OnInit {
   ];
 
   isModalOpen = false;
+  isInviteModalOpen = false;
+  isProposalsModalOpen = false;
+
   currentBlockId = '';
   currentBlock: any = null;
   newNoteText = '';
   explodingEmoji: string | null = null;
+
+  // For Invitations
+  inviteForm = { nomPrenom: '', email: '', role: 'Developpeur', statutMembre: 'Tempsplein' };
+
+  // For Proposals
+  proposals: BmcProposal[] = [];
 
   constructor(
     private cdr: ChangeDetectorRef,
     private route: ActivatedRoute,
     private router: Router,
     private bmcService: BusinessPlanService,
-    private startupService: StartupService // Nouveau
+    private startupService: StartupService,
+    private wsService: BmcWebSocketService,
+    private authService: AuthService
   ) { }
 
   ngOnInit(): void {
@@ -52,18 +80,86 @@ export class BmcComponent implements OnInit {
       const id = params['id'];
       if (id) {
         this.startupId = +id;
-        this.loadBusinessPlan();
+        this.authService.saveCurrentStartupId(this.startupId);
+        this.loadBmc(); // Appel de la méthode renommée
+        this.setupWebSocket();
       } else {
-        // Si pas d'ID, on pourrait rediriger ou attendre la sélection
-        this.resetCanvas();
+        const lastId = this.authService.getCurrentStartupId();
+        if (lastId) {
+          this.router.navigate(['/bmc', lastId]);
+        } else {
+          this.resetCanvas();
+        }
+      }
+    });
+
+    this.startupService.startups$.subscribe(startups => {
+      if (startups.length > 0 && !this.startupId && !this.authService.getCurrentStartupId()) {
+        this.router.navigate(['/bmc', startups[0].id]);
       }
     });
   }
 
-  onStartupChange(event: any) {
-    const selectedId = event.target.value;
-    if (selectedId) {
-      this.router.navigate(['/bmc', selectedId]);
+  setupWebSocket() {
+    if (!this.startupId) return;
+
+    console.log('>>> ENTREPRENEUR écoute startupId:', this.startupId);
+    this.wsService.disconnect();
+    this.wsService.connect();
+
+    this.wsService.subscribe(this.startupId).subscribe(event => {
+      console.log('>>> ENTREPRENEUR reçoit event:', event);
+
+      const blockId = event.block_name;
+      if (!blockId) return;
+
+      // Handle Review event separately (cleanup)
+      if (event.type === 'PROPOSAL_REVIEWED') {
+        if (event.proposal_status === 'APPROVED') {
+          this.loadBmc();
+        }
+        delete this.activeBlocks[blockId];
+        this.activeBlocks = { ...this.activeBlocks };
+        this.cdr.detectChanges();
+        return;
+      }
+
+      // Ensure the block object exists in our tracking map
+      const current = this.activeBlocks[blockId] ? { ...this.activeBlocks[blockId] } : {
+        membreNom: event.membre_nom,
+        typingText: '',
+        isTyping: false,
+        isPending: false
+      };
+
+      current.membreNom = event.membre_nom;
+
+      if (event.type === 'CURSOR_MOVE') {
+        // Just presence update
+      } else if (event.type === 'TYPING') {
+        current.typingText = event.typing_text || '';
+        current.isTyping = true;
+        current.isPending = false;
+      } else if (event.type === 'PROPOSAL_SENT') {
+        current.typingText = event.typing_text || '';
+        current.isTyping = false;
+        current.isPending = true;
+        current.proposalId = event.proposal_id;
+
+        // Refresh hidden list for the modal
+        this.bmcService.getProposals(this.startupId!).subscribe(data => this.proposals = data);
+      }
+
+      // Update the map with a NEW object reference
+      this.activeBlocks[blockId] = current;
+      this.activeBlocks = { ...this.activeBlocks }; // Force Angular to detect change in the map
+      this.cdr.detectChanges();
+    });
+  }
+
+  onStartupChange() {
+    if (this.startupId) {
+      this.router.navigate(['/bmc', this.startupId]);
     }
   }
 
@@ -73,10 +169,9 @@ export class BmcComponent implements OnInit {
   }
 
   // ── CHARGEMENT DEPUIS LE BACKEND ──────────────────────────────────────────
-  loadBusinessPlan() {
+  loadBmc() {
     if (!this.startupId) return;
-    
-    // 1. On vide TOUJOURS le canvas avant de charger une nouvelle startup
+
     this.resetCanvas();
     this.isLoading = true;
 
@@ -85,19 +180,39 @@ export class BmcComponent implements OnInit {
         if (plans && plans.length > 0) {
           const plan = plans[0];
           this.businessPlanId = plan.id || null;
-          this.mapDtoToBlocks(plan);
+          this.mapBmcToBlocks(plan);
+
+          // Après le BMC, on charge les propositions en attente pour les afficher inline
+          this.loadPendingProposalsInline();
         } else {
-          // Si aucun plan n'existe pour cette startup, on reste sur un canvas vide
           this.businessPlanId = null;
         }
         this.isLoading = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Erreur lors du chargement du BMC', err);
+        console.error('Erreur chargement BMC:', err);
         this.isLoading = false;
         this.resetCanvas();
       }
+    });
+  }
+
+  loadPendingProposalsInline() {
+    if (!this.startupId) return;
+    this.bmcService.getPendingProposals(this.startupId).subscribe(proposals => {
+      proposals.forEach(p => {
+        if (!this.activeBlocks[p.blockName]) {
+          this.activeBlocks[p.blockName] = {
+            membreNom: p.member?.nomPrenom || 'Membre',
+            typingText: p.newValue,
+            isTyping: false,
+            isPending: true,
+            proposalId: p.id
+          };
+        }
+      });
+      this.cdr.detectChanges();
     });
   }
 
@@ -114,20 +229,28 @@ export class BmcComponent implements OnInit {
       return;
     }
 
+    const valuePropNotes = this.getBlock('propositions').notes;
+    if (!valuePropNotes || valuePropNotes.length === 0) {
+      alert('⚠️ La "Proposition de Valeur" est obligatoire pour sauvegarder le Business Model Canvas.');
+      return;
+    }
+
     const dto: BusinessPlanDTO = this.mapBlocksToDto();
-    
+
     // DEBUG : Voir ce qui est envoyé au serveur
     console.log('Envoi du DTO au serveur :', dto);
 
     this.isLoading = true;
-    
+
     if (this.businessPlanId) {
       this.bmcService.update(this.businessPlanId, dto).subscribe({
-        next: (res) => {
-          alert('✨ Business Model Canvas mis à jour avec succès !');
+        next: (res: any) => {
+          console.log('Sauvegarde réussie !');
           this.isLoading = false;
+          // Reload to ensure UI is perfectly in sync with DB
+          this.loadBmc();
         },
-        error: (err) => {
+        error: (err: any) => {
           console.error('Erreur lors de la mise à jour', err);
           alert('Erreur lors de la sauvegarde. Vérifiez la console (F12).');
           this.isLoading = false;
@@ -135,12 +258,12 @@ export class BmcComponent implements OnInit {
       });
     } else {
       this.bmcService.create(dto).subscribe({
-        next: (res) => {
+        next: (res: any) => {
           this.businessPlanId = res.id || null;
           alert('✨ Premier Business Model Canvas créé avec succès !');
           this.isLoading = false;
         },
-        error: (err) => {
+        error: (err: any) => {
           console.error('Erreur lors de la création', err);
           alert('Erreur 400 : Le serveur a rejeté les données. Vérifiez la console (F12).');
           this.isLoading = false;
@@ -150,55 +273,38 @@ export class BmcComponent implements OnInit {
   }
 
   // ── MAPPING FUNCTIONS ──────────────────────────────────────────────────────
-  
-  private mapDtoToBlocks(dto: any) {
-    if (!dto) return;
 
-    // Mapping flexible pour supporter CamelCase (Frontend) et snake_case (souvent Backend/DB)
-    this.getBlock('partners').notes = this.splitNotes(dto.partenairesCles || dto.partenaires_cles);
-    this.getBlock('activities').notes = this.splitNotes(dto.activitesCles || dto.activites_cles);
-    this.getBlock('resources').notes = this.splitNotes(dto.ressourcesCles || dto.ressources_cles);
-    this.getBlock('propositions').notes = this.splitNotes(dto.propositionValeurs || dto.proposition_valeurs);
-    this.getBlock('relationships').notes = this.splitNotes(dto.relationsClients || dto.relations_clients);
-    this.getBlock('channels').notes = this.splitNotes(dto.canauxDistribution || dto.canaux_distribution);
-    this.getBlock('segments').notes = this.splitNotes(dto.segmentsClients || dto.segments_clients);
-    this.getBlock('costs').notes = this.splitNotes(dto.structuresCouts || dto.structures_couts);
-    this.getBlock('revenues').notes = this.splitNotes(dto.fluxRevenus || dto.flux_revenus);
+  mapBmcToBlocks(bmc: any): void {
+    if (!bmc) return;
+
+    const getVal = (cCase: string, sCase: string) => bmc[cCase] || bmc[sCase] || '';
+
+    this.getBlock('partners').notes = this.splitNotes(getVal('partenairesCles', 'partenaires_cles'));
+    this.getBlock('activities').notes = this.splitNotes(getVal('activitesCles', 'activites_cles'));
+    this.getBlock('resources').notes = this.splitNotes(getVal('ressourcesCles', 'ressources_cles'));
+    this.getBlock('propositions').notes = this.splitNotes(getVal('propositionValeurs', 'proposition_valeurs'));
+    this.getBlock('relationships').notes = this.splitNotes(getVal('relationsClients', 'relations_clients'));
+    this.getBlock('channels').notes = this.splitNotes(getVal('canauxDistribution', 'canaux_distribution'));
+    this.getBlock('segments').notes = this.splitNotes(getVal('segmentsClients', 'segments_clients'));
+    this.getBlock('costs').notes = this.splitNotes(getVal('structuresCouts', 'structures_couts'));
+    this.getBlock('revenues').notes = this.splitNotes(getVal('fluxRevenus', 'flux_revenus'));
+
+    this.businessPlanId = bmc.id || null;
   }
 
   private mapBlocksToDto(): any {
     const sId = Number(this.startupId);
     return {
-      // On envoie les deux formats pour être sûr que le backend intercepte les données
       startupId: sId,
-      startup_id: sId,
-      
-      partenairesCles: this.joinNotes('partners') || ' ',
-      partenaires_cles: this.joinNotes('partners') || ' ',
-      
-      activitesCles: this.joinNotes('activities') || ' ',
-      activites_cles: this.joinNotes('activities') || ' ',
-      
-      ressourcesCles: this.joinNotes('resources') || ' ',
-      ressources_cles: this.joinNotes('resources') || ' ',
-      
-      propositionValeurs: this.joinNotes('propositions') || ' ',
-      proposition_valeurs: this.joinNotes('propositions') || ' ',
-      
-      relationsClients: this.joinNotes('relationships') || ' ',
-      relations_clients: this.joinNotes('relationships') || ' ',
-      
-      canauxDistribution: this.joinNotes('channels') || ' ',
-      canaux_distribution: this.joinNotes('channels') || ' ',
-      
-      segmentsClients: this.joinNotes('segments') || ' ',
-      segments_clients: this.joinNotes('segments') || ' ',
-      
-      structuresCouts: this.joinNotes('costs') || ' ',
-      structures_couts: this.joinNotes('costs') || ' ',
-      
-      fluxRevenus: this.joinNotes('revenues') || ' ',
-      flux_revenus: this.joinNotes('revenues') || ' '
+      partenairesCles: this.joinNotes('partners') || '',
+      activitesCles: this.joinNotes('activities') || '',
+      ressourcesCles: this.joinNotes('resources') || '',
+      propositionValeurs: this.joinNotes('propositions') || '',
+      relationsClients: this.joinNotes('relationships') || '',
+      canauxDistribution: this.joinNotes('channels') || '',
+      segmentsClients: this.joinNotes('segments') || '',
+      structuresCouts: this.joinNotes('costs') || '',
+      fluxRevenus: this.joinNotes('revenues') || ''
     };
   }
 
@@ -207,12 +313,115 @@ export class BmcComponent implements OnInit {
   }
 
   private splitNotes(text: string): string[] {
-    return text ? text.split(';').filter(n => n.trim() !== '') : [];
+    if (!text || text.trim() === 'À définir') return [];
+    return text.split(/[;,]/).map(n => n.trim()).filter(n => n !== '' && n !== 'À définir');
+  }
+
+  // ── INVITATIONS ────────────────────────────────────────────────────────────
+  openInviteModal() {
+    if (!this.startupId) {
+      alert('Veuillez sélectionner une startup d\'abord.');
+      return;
+    }
+    this.isInviteModalOpen = true;
+  }
+
+  sendInvite() {
+    if (!this.inviteForm.email || !this.inviteForm.nomPrenom) return;
+    this.isLoading = true;
+    this.startupService.inviteMember(this.startupId!, this.inviteForm).subscribe({
+      next: () => {
+        alert("Invitation envoyée avec succès ✨");
+        this.isInviteModalOpen = false;
+        this.inviteForm = { nomPrenom: '', email: '', role: 'Developpeur', statutMembre: 'Tempsplein' };
+        this.isLoading = false;
+      },
+      error: (err: any) => {
+        console.error("Erreur invitation:", err);
+        alert("Erreur lors de l'envoi de l'invitation.");
+        this.isLoading = false;
+      }
+    });
+  }
+
+  // ── PROPOSALS ──────────────────────────────────────────────────────────────
+  openProposalsModal() {
+    if (!this.startupId) return;
+    this.isLoading = true;
+    this.bmcService.getProposals(this.startupId).subscribe({
+      next: (data: BmcProposal[]) => {
+        this.proposals = data;
+        this.isProposalsModalOpen = true;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.isLoading = false;
+      }
+    });
+  }
+
+  handleProposal(proposal: BmcProposal, status: 'APPROVED' | 'REJECTED') {
+    this.reviewProposal(proposal.id, status, proposal.blockName);
+  }
+
+  onApprove(proposalId: number, blockName: string) {
+    this.reviewProposal(proposalId, 'APPROVED', blockName);
+  }
+
+  onReject(proposalId: number, blockName: string) {
+    this.reviewProposal(proposalId, 'REJECTED', blockName);
+  }
+
+  private reviewProposal(proposalId: number, status: 'APPROVED' | 'REJECTED', blockName: string) {
+    this.isLoading = true;
+    this.bmcService.reviewProposal(proposalId, status).subscribe({
+      next: () => {
+        if (status === 'APPROVED') {
+          // Apply the suggestion to the local blocks array
+          const suggestion = this.activeBlocks[blockName]?.typingText;
+          if (suggestion) {
+            const block = this.blocks.find(b => b.id === blockName);
+            if (block) {
+              if (!block.notes) block.notes = [];
+              block.notes.push(suggestion);
+
+              // Persist the whole BMC with the new note added
+              this.saveBmc(); // Persistence - Enabled specifically for Approval action
+            }
+          }
+        }
+
+        // Notify member via WebSocket
+        if (this.startupId) {
+          this.wsService.sendReview(this.startupId, {
+            type: 'PROPOSAL_REVIEWED',
+            proposal_status: status,
+            block_name: blockName
+          });
+        }
+
+        // Local cleanup
+        delete this.activeBlocks[blockName];
+        this.activeBlocks = { ...this.activeBlocks };
+
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error("Error during proposal review:", err);
+        alert("Erreur lors de la revue de la proposition.");
+        this.isLoading = false;
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.wsService.disconnect();
   }
 
   private joinNotes(blockId: string): string {
     const notes = this.getBlock(blockId).notes;
-    return notes.length > 0 ? notes.join(';') : '';
+    return notes.length > 0 ? notes.join(',') : '';
   }
 
   // ── UI LOGIC (EXISTANTE) ────────────────────────────────────────────────────
@@ -223,7 +432,7 @@ export class BmcComponent implements OnInit {
       this.currentBlock = block;
       this.explodingEmoji = block.icon;
       this.cdr.detectChanges();
-      
+
       setTimeout(() => {
         this.currentBlockId = blockId;
         this.newNoteText = '';
@@ -244,6 +453,7 @@ export class BmcComponent implements OnInit {
       block.notes.push(this.newNoteText.trim());
       this.explodingEmoji = block.icon;
       this.closeModal();
+      // this.saveBmc(); // Persistence - removed to prevent auto-save
       this.cdr.detectChanges();
       setTimeout(() => {
         this.explodingEmoji = null;
@@ -254,12 +464,14 @@ export class BmcComponent implements OnInit {
 
   removeNote(blockId: string, index: number) {
     this.getBlock(blockId).notes.splice(index, 1);
+    // this.saveBmc(); // Persistence - removed to prevent auto-save
   }
 
   updateNote(blockId: string, index: number, event: any) {
     const newText = event.target.textContent.trim();
     if (newText) {
       this.getBlock(blockId).notes[index] = newText;
+      // this.saveBmc(); // Persistence - removed to prevent auto-save
     } else {
       // Si on efface tout, on remet l'ancienne valeur ou on supprime ? 
       // Ici on garde l'ancienne pour éviter les notes vides accidentelles

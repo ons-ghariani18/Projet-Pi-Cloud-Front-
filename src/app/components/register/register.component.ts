@@ -40,17 +40,17 @@ export class RegisterComponent {
   onRoleChange(event: any): void {
     this.selectedRole = event.target.value;
     // Reset validators for specific fields
-    if (this.selectedRole !== 'ENTREPRENEUR') {
+    if (this.selectedRole !== 'entrepreneur') {
       this.registerForm.get('startupDescription')?.clearValidators();
     } else {
       this.registerForm.get('startupDescription')?.setValidators(Validators.required);
     }
-    if (this.selectedRole !== 'EXPERT') {
+    if (this.selectedRole !== 'expert') {
       this.registerForm.get('domaine')?.clearValidators();
     } else {
       this.registerForm.get('domaine')?.setValidators(Validators.required);
     }
-    if (this.selectedRole !== 'ORGANISATEUR') {
+    if (this.selectedRole !== 'organisateur') {
       this.registerForm.get('organisation')?.clearValidators();
     } else {
       this.registerForm.get('organisation')?.setValidators(Validators.required);
@@ -77,22 +77,22 @@ export class RegisterComponent {
     };
 
     // Add role-specific fields only if they exist
-    if (this.registerForm.value.role === 'ENTREPRENEUR') {
+    if (this.registerForm.value.role === 'entrepreneur') {
       payload.startupDescription = this.registerForm.value.startupDescription;
-    } else if (this.registerForm.value.role === 'EXPERT') {
+    } else if (this.registerForm.value.role === 'expert') {
       payload.domaine = this.registerForm.value.domaine;
-    } else if (this.registerForm.value.role === 'ORGANISATEUR') {
+    } else if (this.registerForm.value.role === 'organisateur') {
       payload.organisation = this.registerForm.value.organisation;
     }
 
-    this.authService.register(payload).subscribe({
+    this.authService.signup(payload).subscribe({
       next: () => {
-        // Sauvegarder l'info utilisateur pour l'accueil personnalisé
-        this.authService.saveUser({ username: this.registerForm.value.username });
+        // Optionnel: On pourrait connecter l'utilisateur automatiquement ici
+        // Mais pour l'instant on garde le comportement actuel de redirection
 
-        if (this.registerForm.value.role === 'ENTREPRENEUR') {
+        if (this.registerForm.value.role === 'entrepreneur') {
           this.successMessage = 'Inscription réussie ! Préparation de votre espace startup...';
-          setTimeout(() => this.router.navigate(['/startups']), 1500);
+          setTimeout(() => this.router.navigate(['/login']), 1500);
         } else {
           this.successMessage = 'Inscription réussie ! Vous pouvez maintenant vous connecter.';
           setTimeout(() => this.router.navigate(['/login']), 2000);

@@ -26,10 +26,8 @@ export class LoginComponent {
   onSubmit(): void {
     if (this.loginForm.invalid) return;
 
-    this.authService.login(this.loginForm.value).subscribe({
+    this.authService.signin(this.loginForm.value).subscribe({
       next: (res) => {
-        this.authService.saveToken(res.token);
-        this.authService.saveUser(res);
         // Rediriger vers l'interface startups
         this.router.navigate(['/startups']);
       },

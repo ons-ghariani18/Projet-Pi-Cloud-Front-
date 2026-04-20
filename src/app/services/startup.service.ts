@@ -19,7 +19,7 @@ export class StartupService {
   }
 
   loadStartups(): void {
-    this.http.get<Startup[]>(this.apiUrl).pipe(
+    this.http.get<Startup[]>(`${this.apiUrl}/my`).pipe(
       map(startups => startups.map(s => this.augmentStartup(s)))
     ).subscribe({
       next: (startups) => {
@@ -33,14 +33,14 @@ export class StartupService {
   }
 
   getStartups(): Observable<Startup[]> {
-    return this.http.get<Startup[]>(this.apiUrl).pipe(
+    return this.http.get<Startup[]>(`${this.apiUrl}/my`).pipe(
       map(startups => startups.map(s => this.augmentStartup(s))),
       tap(startups => this.startupsSubject.next(startups))
     );
   }
 
-  addStartup(startup: Startup): Observable<Startup> {
-    return this.http.post<Startup>(this.apiUrl, startup).pipe(
+  createStartup(data: any): Observable<Startup> {
+    return this.http.post<Startup>(this.apiUrl, data).pipe(
       map(s => this.augmentStartup(s)),
       tap(newStartup => {
         const current = this.startupsSubject.value;
@@ -49,6 +49,30 @@ export class StartupService {
     );
   }
 
+  getAll(): Observable<Startup[]> {
+    return this.http.get<Startup[]>(`${this.apiUrl}/my`).pipe(
+      map(startups => startups.map(s => this.augmentStartup(s))),
+      tap(startups => this.startupsSubject.next(startups))
+    );
+  }
+
+  getMyStartups(): Observable<Startup[]> {
+    return this.http.get<Startup[]>(`${this.apiUrl}/my`).pipe(
+      map(startups => startups.map(s => this.augmentStartup(s))),
+      tap(startups => this.startupsSubject.next(startups))
+    );
+  }
+
+  inviteMember(startupId: number, data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${startupId}/membres`, data);
+  }
+
+  addStartup(startup: Startup): Observable<Startup> {
+    return this.createStartup(startup);
+  }
+
+
+  // Keep other methods for compatibility if they are used
   updateStartupStatus(id: number, status: 'approved' | 'pending' | 'rejected'): Observable<Startup> {
     return this.http.put<Startup>(`${this.apiUrl}/${id}/status`, { status }).pipe(
       map(s => this.augmentStartup(s)),
@@ -56,8 +80,9 @@ export class StartupService {
         const current = this.startupsSubject.value;
         const index = current.findIndex(s => s.id === id);
         if (index !== -1) {
-          current[index] = updatedStartup;
-          this.startupsSubject.next([...current]);
+          const updatedList = [...current];
+          updatedList[index] = updatedStartup;
+          this.startupsSubject.next(updatedList);
         }
       })
     );
@@ -70,11 +95,16 @@ export class StartupService {
         const current = this.startupsSubject.value;
         const index = current.findIndex(s => s.id === id);
         if (index !== -1) {
-          current[index] = updatedStartup;
-          this.startupsSubject.next([...current]);
+          const updatedList = [...current];
+          updatedList[index] = updatedStartup;
+          this.startupsSubject.next(updatedList);
         }
       })
     );
+  }
+
+  getMembers(startupId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/${startupId}/membres`);
   }
 
   deleteStartup(id: number): Observable<void> {
@@ -90,16 +120,12 @@ export class StartupService {
     const today = new Date();
     const d = today.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
     
-    // Fallback if backend fields are null
-    const name = s.nom || 'Sans nom';
-    const sector = s.secteur || 'Secteur inconnu';
-    
     return {
       ...s,
-      nom: name, // Ensure 'nom' is set even if backend returns 'name' (sync)
-      sub: sector + ' · Tunis',
+      sub: (s.secteur || 'Secteur inconnu') + ' · Tunis',
       dates: s.dateCreation ? new Date(s.dateCreation).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : d,
-      status: s.stade === 'MVP' ? 'approved' : 'pending' // Simple mapping logic for status
+      status: s.stade === 'MVP' ? 'approved' : 'pending'
     };
   }
 }
+

@@ -18,8 +18,10 @@ import { StatusModalComponent } from './components/startups/status-modal/status-
 import { AddStartupModalComponent } from './components/startups/add-startup-modal/add-startup-modal.component';
 import { EditStartupModalComponent } from './components/startups/edit-startup-modal/edit-startup-modal.component';
 import { BmcComponent } from './components/bmc/bmc.component';
+import { BmcPublicComponent } from './components/bmc/bmc-public/bmc-public.component';
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
+import { NamingInterceptor } from './interceptors/naming.interceptor';
 
 @NgModule({
   declarations: [
@@ -36,7 +38,8 @@ import { AuthInterceptor } from './interceptors/auth.interceptor';
     StatusModalComponent,
     AddStartupModalComponent,
     EditStartupModalComponent,
-    BmcComponent
+    BmcComponent,
+    BmcPublicComponent
   ],
   imports: [
     BrowserModule,
@@ -47,8 +50,10 @@ import { AuthInterceptor } from './interceptors/auth.interceptor';
     DragDropModule
   ],
   providers: [
-    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
+    { provide: HTTP_INTERCEPTORS, useClass: NamingInterceptor, multi: true }
   ],
+
   bootstrap: [AppComponent]
 })
 export class AppModule { }
