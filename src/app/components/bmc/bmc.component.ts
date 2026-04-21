@@ -7,6 +7,7 @@ import { BmcProposal, Membre } from '../../models/membre';
 import { BmcWebSocketService } from '../../services/bmc-websocket.service';
 import { OnDestroy } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
+import { CanvasAiService, CanvasSuggestionsResponse } from '../../services/canvas-ai.service';
 
 @Component({
   selector: 'app-bmc',
@@ -59,6 +60,8 @@ export class BmcComponent implements OnInit, OnDestroy {
 
   // For Proposals
   proposals: BmcProposal[] = [];
+  aiLoading = false;
+  aiError: string | null = null;
 
   constructor(
     private cdr: ChangeDetectorRef,
@@ -67,7 +70,8 @@ export class BmcComponent implements OnInit, OnDestroy {
     private bmcService: BusinessPlanService,
     private startupService: StartupService,
     private wsService: BmcWebSocketService,
-    private authService: AuthService
+    private authService: AuthService,
+    private canvasAiService: CanvasAiService
   ) { }
 
   ngOnInit(): void {
@@ -417,6 +421,54 @@ export class BmcComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.wsService.disconnect();
+  }
+
+  generateAiSuggestions(): void {
+    if (!this.startupId) {
+      alert('Veuillez sélectionner une startup avant de lancer l’IA.');
+      return;
+    }
+
+    this.aiLoading = true;
+    this.aiError = null;
+
+    this.canvasAiService.getSuggestions(this.startupId).subscribe({
+      next: (response) => {
+        this.applyAiSuggestionsToBlocks(response);
+        this.aiLoading = false;
+      },
+      error: (err) => {
+        console.error('Erreur génération suggestions IA:', err);
+        this.aiError = err?.error?.erreur || 'Impossible de récupérer les suggestions IA.';
+        this.aiLoading = false;
+      }
+    });
+  }
+
+  private applyAiSuggestionsToBlocks(response: CanvasSuggestionsResponse): void {
+    const mapping: Array<{ blockId: string; suggestions?: string[] }> = [
+      { blockId: 'partners', suggestions: response.partenairesCles },
+      { blockId: 'activities', suggestions: response.activitesCles },
+      { blockId: 'resources', suggestions: response.ressourcesCles },
+      { blockId: 'propositions', suggestions: response.propositionValeurs },
+      { blockId: 'relationships', suggestions: response.relationsClients },
+      { blockId: 'channels', suggestions: response.canauxDistribution },
+      { blockId: 'segments', suggestions: response.segmentsClients },
+      { blockId: 'costs', suggestions: response.structuresCouts },
+      { blockId: 'revenues', suggestions: response.fluxRevenus }
+    ];
+
+    mapping.forEach(({ blockId, suggestions }) => {
+      if (!suggestions || !suggestions.length) return;
+      const block = this.getBlock(blockId);
+      const existing = new Set((block.notes || []).map((n) => n.trim().toLowerCase()));
+      const toAdd = suggestions
+        .map((s) => (s || '').trim())
+        .filter((s) => s.length > 0 && !existing.has(s.toLowerCase()));
+      block.notes = [...(block.notes || []), ...toAdd];
+    });
+
+    this.cdr.detectChanges();
   }
 
   private joinNotes(blockId: string): string {

@@ -19,6 +19,7 @@ import { AddStartupModalComponent } from './components/startups/add-startup-moda
 import { EditStartupModalComponent } from './components/startups/edit-startup-modal/edit-startup-modal.component';
 import { BmcComponent } from './components/bmc/bmc.component';
 import { BmcPublicComponent } from './components/bmc/bmc-public/bmc-public.component';
+import { MembrePerformanceComponent } from './components/startups/membre-performance/membre-performance.component';
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
 import { NamingInterceptor } from './interceptors/naming.interceptor';
@@ -39,7 +40,8 @@ import { NamingInterceptor } from './interceptors/naming.interceptor';
     AddStartupModalComponent,
     EditStartupModalComponent,
     BmcComponent,
-    BmcPublicComponent
+    BmcPublicComponent,
+    MembrePerformanceComponent
   ],
   imports: [
     BrowserModule,

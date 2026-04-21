@@ -1,0 +1,85 @@
+<div class="performance-wrapper">
+  <div *ngIf="!startupId" class="empty-state">
+    Sélectionnez une startup pour afficher la performance des membres.
+  </div>
+
+  <ng-container *ngIf="startupId">
+    <div class="top-metrics" *ngIf="membres.length">
+      <div class="metric-card">
+        <p>Membre le plus actif</p>
+        <h4>{{ bestMembre?.nomPrenom || '-' }}</h4>
+      </div>
+      <div class="metric-card">
+        <p>Taux d'approbation moyen</p>
+        <h4>{{ tauxMoyenEquipe }}%</h4>
+      </div>
+      <div class="metric-card">
+        <p>Membres inactifs</p>
+        <h4>{{ membresInactifs }}</h4>
+      </div>
+      <div class="metric-card">
+        <p>Total approuvées</p>
+        <h4>{{ totalApprovedEquipe }}</h4>
+      </div>
+    </div>
+
+    <div *ngIf="loading" class="loading">Chargement des performances...</div>
+    <div *ngIf="!loading && !membres.length" class="empty-state">Aucune donnée de performance disponible.</div>
+
+    <div class="cards-grid" *ngIf="!loading && membres.length">
+      <div class="member-card" *ngFor="let m of membres" [class.inactive-card]="m.totalPropositions === 0">
+        <div class="head">
+          <div class="identity">
+            <div class="avatar">{{ initiales(m.nomPrenom) }}</div>
+            <div>
+              <h4>{{ m.nomPrenom }}</h4>
+              <p>{{ m.role }}</p>
+            </div>
+          </div>
+          <span [class]="badgeClass(m.niveauEngagement)">{{ m.niveauEngagement }}</span>
+        </div>
+
+        <div class="metrics-grid">
+          <div class="tile">
+            <p>Score global</p>
+            <h3 [class]="scoreClass(m.scoreGlobal)">{{ m.scoreGlobal || 0 }}/100</h3>
+          </div>
+          <div class="tile">
+            <p>Taux approbation</p>
+            <h3>{{ m.tauxApprobation || 0 }}%</h3>
+            <div class="progress"><span [style.width]="progressWidth(m.tauxApprobation)"></span></div>
+          </div>
+          <div class="tile">
+            <p>Temps 1ère action</p>
+            <h3>{{ m.tempsAvantPremiereAction ?? '-' }}h</h3>
+          </div>
+          <div class="tile">
+            <p>Propositions</p>
+            <h3>{{ m.totalApproved || 0 }} approuvées / {{ m.totalRejected || 0 }} rejetées</h3>
+          </div>
+        </div>
+
+        <div class="window-usage">
+          <p>Utilisation de la fenêtre (7 jours)</p>
+          <div class="progress large"><span [style.width]="progressWidth(m.pctFenetreUtilisee)"></span></div>
+          <small>{{ m.pctFenetreUtilisee || 0 }}% — {{ (m.pctFenetreUtilisee || 100) < 50 ? 'A contribué tôt ⚡' : 'Contribution tardive' }}</small>
+        </div>
+
+        <div class="actions" *ngIf="m.totalPropositions > 0; else inactiveActions">
+          <button class="btn ghost" (click)="voirPropositions(m)">Voir les propositions</button>
+          <button class="btn warn" (click)="actionSuspendre(m)">Suspendre l'accès</button>
+          <button class="btn danger" (click)="actionRevoquer(m)">Révoquer</button>
+        </div>
+
+        <ng-template #inactiveActions>
+          <p class="inactive-message">Aucune contribution depuis l'invitation</p>
+          <div class="actions">
+            <button class="btn ghost" (click)="actionRelancer(m)">Relancer</button>
+            <button class="btn warn" (click)="actionSuspendre(m)">Suspendre l'accès</button>
+            <button class="btn danger" (click)="actionRevoquer(m)">Révoquer</button>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </ng-container>
+</div>

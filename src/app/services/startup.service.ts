@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { tap, map } from 'rxjs/operators';
 import { Startup } from '../models/startup';
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -14,12 +15,12 @@ export class StartupService {
   private startupsSubject = new BehaviorSubject<Startup[]>([]);
   startups$ = this.startupsSubject.asObservable();
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private authService: AuthService) {
     this.loadStartups();
   }
 
   loadStartups(): void {
-    this.http.get<Startup[]>(`${this.apiUrl}/my`).pipe(
+    this.http.get<Startup[]>(this.resolveStartupsEndpoint()).pipe(
       map(startups => startups.map(s => this.augmentStartup(s)))
     ).subscribe({
       next: (startups) => {
@@ -33,7 +34,7 @@ export class StartupService {
   }
 
   getStartups(): Observable<Startup[]> {
-    return this.http.get<Startup[]>(`${this.apiUrl}/my`).pipe(
+    return this.http.get<Startup[]>(this.resolveStartupsEndpoint()).pipe(
       map(startups => startups.map(s => this.augmentStartup(s))),
       tap(startups => this.startupsSubject.next(startups))
     );
@@ -50,14 +51,14 @@ export class StartupService {
   }
 
   getAll(): Observable<Startup[]> {
-    return this.http.get<Startup[]>(`${this.apiUrl}/my`).pipe(
+    return this.http.get<Startup[]>(`${this.apiUrl}`).pipe(
       map(startups => startups.map(s => this.augmentStartup(s))),
       tap(startups => this.startupsSubject.next(startups))
     );
   }
 
   getMyStartups(): Observable<Startup[]> {
-    return this.http.get<Startup[]>(`${this.apiUrl}/my`).pipe(
+    return this.http.get<Startup[]>(this.resolveStartupsEndpoint()).pipe(
       map(startups => startups.map(s => this.augmentStartup(s))),
       tap(startups => this.startupsSubject.next(startups))
     );
@@ -126,6 +127,13 @@ export class StartupService {
       dates: s.dateCreation ? new Date(s.dateCreation).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : d,
       status: s.stade === 'MVP' ? 'approved' : 'pending'
     };
+  }
+
+  private resolveStartupsEndpoint(): string {
+    const user = this.authService.getUser();
+    const roles: string[] = user?.roles || [];
+    const isEntrepreneur = roles.includes('ROLE_ENTREPRENEUR');
+    return isEntrepreneur ? `${this.apiUrl}/my` : `${this.apiUrl}`;
   }
 }
 
