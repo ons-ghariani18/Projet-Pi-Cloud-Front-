@@ -1,0 +1,238 @@
+<div class="versioning-tab-content">
+  
+  <!-- SECTION A: BRANCHES ACTIVES -->
+  <div class="section-card">
+    <div class="card-header">
+      <div class="header-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 3v12"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+        <h3>Branches actives</h3>
+      </div>
+      <div class="header-actions">
+        <button class="btn-create-branch" (click)="createNewBranch()" [disabled]="isLoading">
+          + Nouvelle branche
+        </button>
+        <button class="btn-refresh" (click)="loadAll()" [disabled]="isLoading">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="branch-table-container">
+      <table class="branch-table" *ngIf="branches.length > 0">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Nom de la branche</th>
+            <th>Propriétaire</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let branch of branches" [class.main-row]="branch.nom === 'main'">
+            <td>
+              <span class="status-indicator" [class.main]="branch.nom === 'main'"></span>
+            </td>
+            <td>
+              <div class="branch-name-cell">
+                <strong>{{ branch.nom }}</strong>
+                <span class="badge-official" *ngIf="branch.nom === 'main'">version officielle</span>
+              </div>
+            </td>
+            <td>
+              <span class="member-name">{{ branch.nom === 'main' ? 'Maître' : (branch.nom.split('-')[1] || 'Collaborateur') }}</span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-edit-action" *ngIf="branch.nom !== 'main'" (click)="openEditBranch(branch)" [disabled]="isLoading">
+                  Éditer
+                </button>
+                <button class="btn-merge-action" *ngIf="branch.nom !== 'main'" (click)="startMerge(branch.id)" [disabled]="isLoading">
+                  Merger
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- EMPTY STATE BRANCHES -->
+      <div class="empty-state" *ngIf="branches.length === 0 && !isLoading">
+        <div class="empty-icon">📂</div>
+        <p>Aucune branche active trouvée pour cette startup.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE ÉDITER LA BRANCHE -->
+  <div class="modal-overlay" *ngIf="isEditing">
+    <div class="edit-branch-modal">
+      <div class="modal-header">
+        <div class="header-text">
+          <h3>✍️ Éditer la branche "{{ editingBranch?.nom }}"</h3>
+          <p>Modifiez les blocs avant de fusionner vers la version officielle.</p>
+        </div>
+        <button class="close-modal" (click)="isEditing = false">×</button>
+      </div>
+
+      <div class="modal-body scrollable">
+        <div *ngFor="let key of getEditingKeys()" class="edit-block-section">
+          <div class="block-info">
+            <h4 class="block-title">{{ key }}</h4>
+          </div>
+          
+          <div class="tag-chips-container">
+            <div class="tag-chip" *ngFor="let tag of editingSnapshot[key]; let i = index">
+              {{ tag }}
+              <button class="remove-tag" (click)="removeTag(key, i)">×</button>
+            </div>
+            <div class="empty-tags" *ngIf="editingSnapshot[key].length === 0">Aucun tag pour ce bloc.</div>
+          </div>
+
+          <div class="add-tag-input-group">
+            <input 
+              type="text" 
+              [(ngModel)]="newTagInputs[key]" 
+              (keyup.enter)="addTag(key)"
+              placeholder="Ajouter un tag..."
+            >
+            <button class="btn-add-tag" (click)="addTag(key)">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="isEditing = false">Annuler</button>
+        <button class="btn-save-branch" [disabled]="isLoading" (click)="saveBranchChanges()">
+          {{ isLoading ? 'Enregistrement...' : 'Sauvegarder les modifications' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALE RÉSOLUTION CONFLITS (STEPPER) -->
+  <div class="modal-overlay" *ngIf="isMerging">
+    <div class="conflict-modal">
+      <div class="modal-header">
+        <div class="modal-header">
+            <h3>⚠️ Résolution de conflits</h3>
+            <p *ngIf="hasConflicts">Fusion de branche en cours (Session: {{sessionId}})</p>
+            <p *ngIf="!hasConflicts">Fusion prête (Aucun conflit détecté)</p>
+            <button class="close-btn" (click)="isMerging = false">×</button>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <!-- État : Aucun conflit -->
+        <div *ngIf="!hasConflicts" class="success-review">
+            <div class="success-icon">✨</div>
+            <h4>Toutes les modifications sont compatibles !</h4>
+            <p>Les changements de la branche collaborateur ont été fusionnés avec succès dans la version officielle.</p>
+        </div>
+
+        <!-- État : Conflits à résoudre -->
+        <div *ngIf="hasConflicts">
+            <div class="conflict-counter">
+                Conflit {{currentStep + 1}} sur {{Object.keys(conflicts).length}}
+            </div>
+
+            <div *ngFor="let key of getConflictKeys()" class="conflict-block" [hidden]="resolvedBlocs.has(key) && getConflictKeys().indexOf(key) !== resolvedBlocs.size - 1" [class.resolved]="resolvedBlocs.has(key)">
+              <div *ngIf="!resolvedBlocs.has(key) || getConflictKeys().indexOf(key) === resolvedBlocs.size">
+                <div class="block-title">
+                  <h4>Bloc : {{ getBlockLabel(key) }}</h4>
+                  <span class="resolved-badge" *ngIf="resolvedBlocs.has(key)">RÉSOLU</span>
+                </div>
+
+                <div class="diff-view" *ngIf="!resolvedBlocs.has(key)">
+                  <div class="diff-col main">
+                    <div class="col-label">Version actuelle (main)</div>
+                    <ul class="tag-list">
+                      <li *ngFor="let tag of conflicts[key].main">{{ tag }}</li>
+                      <li *ngIf="conflicts[key].main.length === 0" class="empty">(vide)</li>
+                    </ul>
+                  </div>
+                  <div class="diff-col source">
+                    <div class="col-label">Modifications (membre)</div>
+                    <ul class="tag-list">
+                      <li *ngFor="let tag of conflicts[key].source">{{ tag }}</li>
+                      <li *ngIf="conflicts[key].source.length === 0" class="empty">(vide)</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div class="resolution-actions" *ngIf="!resolvedBlocs.has(key)">
+                  <p class="question">Quelle version souhaitez-vous conserver ?</p>
+                  <div class="radio-options">
+                    <button class="opt-btn" (click)="resolveConflict(key, 'KEEP_MAIN')">Conserver MAIN</button>
+                    <button class="opt-btn" (click)="resolveConflict(key, 'KEEP_SOURCE')">Conserver MEMBRE</button>
+                    <button class="opt-btn recommended" (click)="resolveConflict(key, 'COMBINE')">Combiner les deux</button>
+                    
+                    <div class="custom-resolution">
+                      <label>Ou personnaliser le résultat :</label>
+                      <textarea [(ngModel)]="customChoices[key]" placeholder="Saisissez les tags (un par ligne)..."></textarea>
+                      <button class="opt-btn btn-apply-custom" (click)="resolveConflict(key, 'CUSTOM')">Appliquer personnalisation</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="isMerging = false">Abandonner</button>
+        
+        <button *ngIf="hasConflicts" 
+                class="btn-next" 
+                [disabled]="!isBlocResolved(Object.keys(conflicts)[currentStep])"
+                (click)="nextStep()">
+            {{ currentStep < Object.keys(conflicts).length - 1 ? 'Suivant' : 'Finaliser le merge ✨' }}
+        </button>
+
+        <button *ngIf="!hasConflicts" 
+                class="btn-success" 
+                (click)="isMerging = false; loadAll()">
+            Terminer le processus ✨
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION B: HISTORIQUE DES VERSIONS -->
+  <div class="section-card history-section">
+    <div class="card-header collapsible" (click)="showHistory = !showHistory">
+      <div class="header-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <h3>Historique des versions (main)</h3>
+      </div>
+      <span class="chevron" [class.open]="showHistory">▼</span>
+    </div>
+
+    <div class="history-content" *ngIf="showHistory">
+      <div class="timeline" *ngIf="commits.length > 0">
+        <div *ngFor="let commit of commits; let i = index" class="timeline-item" [class.latest]="i === 0">
+          <div class="timeline-marker"></div>
+          <div class="commit-data">
+            <div class="commit-header">
+              <span class="version-tag">v{{ commits.length - i }}</span>
+              <span class="commit-msg">{{ commit.message || 'Fusion de branche' }}</span>
+            </div>
+            <div class="commit-date">{{ formatDate(commit.timestamp) }}</div>
+          </div>
+          <div class="commit-actions">
+            <button class="btn-restore" (click)="restoreCommit(commit.id)" [disabled]="isLoading">Restaurer</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="empty-state" *ngIf="commits.length === 0 && !isLoading">
+        <p>Aucun historique de version disponible.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOADING OVERLAY -->
+  <div class="loading-overlay" *ngIf="isLoading && !isMerging">
+    <div class="loader"></div>
+    <p>Synchronisation avec le serveur...</p>
+  </div>
+</div>

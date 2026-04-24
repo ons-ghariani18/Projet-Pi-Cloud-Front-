@@ -20,7 +20,8 @@ export class AuthInterceptor implements HttpInterceptor {
                      request.url.includes('/api/bmc/view') || 
                      request.url.includes('/api/bmc/propose') ||
                      request.url.includes('/api/auth/signup') ||
-                     request.url.includes('/api/auth/signin');
+                     request.url.includes('/api/auth/signin') ||
+                     request.url.includes('/api/invitations/verify');
 
     if (token && isApiUrl && !isPublic) {
 

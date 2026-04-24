@@ -12,6 +12,13 @@ import { map } from 'rxjs/operators';
 @Injectable()
 export class NamingInterceptor implements HttpInterceptor {
   intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    // Skip transformation for Versioning, Merge, and Join APIs
+    if (request.url.includes('/api/branches') || 
+        request.url.includes('/api/merge') ||
+        request.url.includes('/api/bmc/join')) {
+      return next.handle(request);
+    }
+
     // Convert Request Body: camelCase -> snake_case
     if (request.body && typeof request.body === 'object' && !(request.body instanceof FormData)) {
       const snakeCaseBody = this.toSnakeCase(request.body);

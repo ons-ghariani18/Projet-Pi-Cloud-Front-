@@ -8,6 +8,7 @@ import { BmcWebSocketService } from '../../services/bmc-websocket.service';
 import { OnDestroy } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { CanvasAiService, CanvasSuggestionsResponse } from '../../services/canvas-ai.service';
+import { VersioningService } from '../../services/versioning.service';
 
 @Component({
   selector: 'app-bmc',
@@ -20,6 +21,7 @@ export class BmcComponent implements OnInit, OnDestroy {
   businessPlanId: number | null = null;
   isLoading = false;
   allStartups: any[] = []; // Liste pour le sélecteur
+  activeTab: 'bmc' | 'suggestions' | 'membres' | 'versioning' = 'bmc';
 
   activeBlocks: {
     [blockId: string]: {
@@ -71,7 +73,8 @@ export class BmcComponent implements OnInit, OnDestroy {
     private startupService: StartupService,
     private wsService: BmcWebSocketService,
     private authService: AuthService,
-    private canvasAiService: CanvasAiService
+    private canvasAiService: CanvasAiService,
+    private versioningService: VersioningService
   ) { }
 
   ngOnInit(): void {
@@ -253,6 +256,9 @@ export class BmcComponent implements OnInit, OnDestroy {
           this.isLoading = false;
           // Reload to ensure UI is perfectly in sync with DB
           this.loadBmc();
+          
+          // SYNCHRONISATION AVEC LA BRANCHE MAIN
+          this.syncMainBranch();
         },
         error: (err: any) => {
           console.error('Erreur lors de la mise à jour', err);
@@ -274,6 +280,60 @@ export class BmcComponent implements OnInit, OnDestroy {
         }
       });
     }
+  }
+
+  // ── SYNCHRONISATION BRANCHE MAIN ───────────────────────────────────────────
+  syncMainBranch() {
+    if (!this.startupId) {
+      console.error('❌ Impossible de synchroniser : startupId est nul');
+      return;
+    }
+    console.log('🔍 Tentative de sync main pour startupId:', this.startupId);
+
+    this.versioningService.getBranches(this.startupId).subscribe({
+      next: (branches: any[]) => {
+        const mainBranch = branches.find(b => b.nom === 'main');
+        
+        if (!mainBranch) {
+          console.warn('Branche main introuvable pour cette startup');
+          this.isLoading = false;
+          return;
+        }
+
+        // Envoyer tout le snapshot en une seule requête pour éviter les conflits
+        const snapshot = this.mapBlocksToSnapshot();
+        console.log('📡 Synchronisation globale du snapshot...', snapshot);
+
+        this.versioningService.updateBranchSnapshot(mainBranch.id, snapshot).subscribe({
+          next: () => {
+            console.log('✅ Branche main synchronisée (Global)');
+            this.isLoading = false;
+          },
+          error: (err: any) => {
+            console.error('Erreur sync globale', err);
+            this.isLoading = false;
+          }
+        });
+      },
+      error: (err: any) => {
+        console.error('Erreur récupération branches', err);
+        this.isLoading = false;
+      }
+    });
+  }
+
+  mapBlocksToSnapshot(): { [key: string]: string[] } {
+    return {
+      'Segments clients':      this.getBlock('segments').notes      || [],
+      'Proposition de valeur': this.getBlock('propositions').notes  || [],
+      'Canaux':                this.getBlock('channels').notes      || [],
+      'Relations clients':     this.getBlock('relationships').notes || [],
+      'Flux de revenus':       this.getBlock('revenues').notes      || [],
+      'Ressources clés':       this.getBlock('resources').notes     || [],
+      'Activités clés':        this.getBlock('activities').notes    || [],
+      'Partenaires clés':      this.getBlock('partners').notes      || [],
+      'Structure de coûts':    this.getBlock('costs').notes         || []
+    };
   }
 
   // ── MAPPING FUNCTIONS ──────────────────────────────────────────────────────
@@ -536,6 +596,31 @@ export class BmcComponent implements OnInit, OnDestroy {
     if (event.target instanceof HTMLElement) {
       event.target.blur();
     }
+  }
+
+  getBlockLabel(key: string): string {
+    const labels: any = {
+      partners: 'Partenaires Clés',
+      activities: 'Activités Clés',
+      resources: 'Ressources Clés',
+      propositions: 'Propositions de Valeur',
+      relationships: 'Relations Clients',
+      channels: 'Canaux',
+      segments: 'Segments Clients',
+      costs: 'Structure de Coûts',
+      revenues: 'Flux de Revenus',
+      // Handles both block IDs and backend keys if they differ
+      partenairesCles: 'Partenaires Clés',
+      activitesCles: 'Activités Clés',
+      ressourcesCles: 'Ressources Clés',
+      propositionValeurs: 'Propositions de Valeur',
+      relationsClients: 'Relations Clients',
+      canauxDistribution: 'Canaux',
+      segmentsClients: 'Segments Clients',
+      structuresCouts: 'Structure de Coûts',
+      fluxRevenus: 'Flux de Revenus'
+    };
+    return labels[key] || key;
   }
 
   drop(event: CdkDragDrop<string[]>) {

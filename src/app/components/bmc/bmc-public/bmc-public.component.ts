@@ -69,11 +69,13 @@ export class BmcPublicComponent implements OnInit, OnDestroy {
       next: (info) => {
         this.membreInfo = info;
         this.authService.saveMembreToken(this.token!);
+        
+        const sid = this.membreInfo.startup_id || this.membreInfo.startupId;
         this.loadBmc();
         
         // WebSocket logic
         this.wsService.connect();
-        this.wsService.subscribe(this.membreInfo.startupId).subscribe(event => {
+        this.wsService.subscribe(sid).subscribe(event => {
           if (event.type === 'PROPOSAL_SENT' || event.type === 'PROPOSAL_REVIEWED') {
             this.loadProposals(); // Refresh the list
             if (event.type === 'PROPOSAL_REVIEWED') {
