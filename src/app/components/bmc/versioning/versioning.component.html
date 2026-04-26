@@ -122,76 +122,106 @@
       </div>
 
       <div class="modal-body">
-        <!-- État : Aucun conflit -->
+        <!-- ✅ Aucun conflit -->
         <div *ngIf="!hasConflicts" class="success-review">
-            <div class="success-icon">✨</div>
-            <h4>Toutes les modifications sont compatibles !</h4>
-            <p>Les changements de la branche collaborateur ont été fusionnés avec succès dans la version officielle.</p>
+          <div class="success-icon">✨</div>
+          <h4>Toutes les modifications sont compatibles !</h4>
+          <p>Les changements peuvent être fusionnés en toute sécurité.</p>
         </div>
 
-        <!-- État : Conflits à résoudre -->
-        <div *ngIf="hasConflicts">
-            <div class="conflict-counter">
-                Conflit {{currentStep + 1}} sur {{Object.keys(conflicts).length}}
-            </div>
+        <!-- ✅ Conflits à résoudre -->
+        <div *ngIf="hasConflicts && currentConflict">
 
-            <div *ngFor="let key of getConflictKeys()" class="conflict-block" [hidden]="resolvedBlocs.has(key) && getConflictKeys().indexOf(key) !== resolvedBlocs.size - 1" [class.resolved]="resolvedBlocs.has(key)">
-              <div *ngIf="!resolvedBlocs.has(key) || getConflictKeys().indexOf(key) === resolvedBlocs.size">
-                <div class="block-title">
-                  <h4>Bloc : {{ getBlockLabel(key) }}</h4>
-                  <span class="resolved-badge" *ngIf="resolvedBlocs.has(key)">RÉSOLU</span>
-                </div>
+          <div class="conflict-counter">
+            Conflit {{ currentStep + 1 }} sur {{ conflictKeys.length }}
+          </div>
 
-                <div class="diff-view" *ngIf="!resolvedBlocs.has(key)">
-                  <div class="diff-col main">
-                    <div class="col-label">Version actuelle (main)</div>
-                    <ul class="tag-list">
-                      <li *ngFor="let tag of conflicts[key].main">{{ tag }}</li>
-                      <li *ngIf="conflicts[key].main.length === 0" class="empty">(vide)</li>
-                    </ul>
-                  </div>
-                  <div class="diff-col source">
-                    <div class="col-label">Modifications (membre)</div>
-                    <ul class="tag-list">
-                      <li *ngFor="let tag of conflicts[key].source">{{ tag }}</li>
-                      <li *ngIf="conflicts[key].source.length === 0" class="empty">(vide)</li>
-                    </ul>
-                  </div>
-                </div>
+          <div class="bloc-title">
+            <strong>Bloc : {{ getBlockLabel(currentConflict.blocName) }}</strong>
+          </div>
 
-                <div class="resolution-actions" *ngIf="!resolvedBlocs.has(key)">
-                  <p class="question">Quelle version souhaitez-vous conserver ?</p>
-                  <div class="radio-options">
-                    <button class="opt-btn" (click)="resolveConflict(key, 'KEEP_MAIN')">Conserver MAIN</button>
-                    <button class="opt-btn" (click)="resolveConflict(key, 'KEEP_SOURCE')">Conserver MEMBRE</button>
-                    <button class="opt-btn recommended" (click)="resolveConflict(key, 'COMBINE')">Combiner les deux</button>
-                    
-                    <div class="custom-resolution">
-                      <label>Ou personnaliser le résultat :</label>
-                      <textarea [(ngModel)]="customChoices[key]" placeholder="Saisissez les tags (un par ligne)..."></textarea>
-                      <button class="opt-btn btn-apply-custom" (click)="resolveConflict(key, 'CUSTOM')">Appliquer personnalisation</button>
-                    </div>
-                  </div>
-                </div>
+          <!-- Comparaison côte à côte -->
+          <div class="comparison-grid">
+
+            <div class="comparison-col main-col">
+              <div class="col-header">VERSION ACTUELLE (MAIN)</div>
+              <div class="tags-list">
+                <span *ngFor="let tag of currentConflict.mainTags" class="tag tag-main">
+                  {{ tag }}
+                </span>
+                <span *ngIf="currentConflict.mainTags.length === 0" class="empty-label">
+                  (vide)
+                </span>
               </div>
             </div>
+
+            <div class="comparison-separator">VS</div>
+
+            <div class="comparison-col source-col">
+              <div class="col-header">MODIFICATIONS (MEMBRE)</div>
+              <div class="tags-list">
+                <span *ngFor="let tag of currentConflict.sourceTags" class="tag tag-source">
+                  {{ tag }}
+                </span>
+                <span *ngIf="currentConflict.sourceTags.length === 0" class="empty-label">
+                  (vide)
+                </span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Origine commune -->
+          <div class="origin-row" *ngIf="currentConflict.originTags.length > 0">
+            <span class="origin-label">Origine commune :</span>
+            <span *ngFor="let tag of currentConflict.originTags" class="tag tag-origin">
+              {{ tag }}
+            </span>
+          </div>
+
+          <!-- Boutons de résolution -->
+          <div class="resolution-question">
+            Quelle version souhaitez-vous conserver ?
+          </div>
+
+          <div class="resolution-actions">
+            <button class="btn-resolve" (click)="resolveAndNext('KEEP_MAIN')">
+              Conserver MAIN
+            </button>
+            <button class="btn-resolve" (click)="resolveAndNext('KEEP_SOURCE')">
+              Conserver MEMBRE
+            </button>
+            <button class="btn-resolve btn-combine" (click)="resolveAndNext('COMBINE')">
+              Combiner les deux
+            </button>
+          </div>
+
+          <!-- Personnalisation -->
+          <div class="custom-section">
+            <label>Ou personnaliser le résultat :</label>
+            <textarea
+              [(ngModel)]="customTagsInput"
+              placeholder="Saisissez les tags (un par ligne)..."
+              rows="4">
+            </textarea>
+            <button
+              class="btn-custom"
+              [disabled]="!customTagsInput.trim()"
+              (click)="resolveAndNext('CUSTOM')">
+              Appliquer personnalisation
+            </button>
+          </div>
+
         </div>
       </div>
 
       <div class="modal-footer">
         <button class="btn-cancel" (click)="isMerging = false">Abandonner</button>
-        
-        <button *ngIf="hasConflicts" 
-                class="btn-next" 
-                [disabled]="!isBlocResolved(Object.keys(conflicts)[currentStep])"
-                (click)="nextStep()">
-            {{ currentStep < Object.keys(conflicts).length - 1 ? 'Suivant' : 'Finaliser le merge ✨' }}
-        </button>
-
-        <button *ngIf="!hasConflicts" 
-                class="btn-success" 
-                (click)="isMerging = false; loadAll()">
-            Terminer le processus ✨
+        <button
+          *ngIf="!hasConflicts"
+          class="btn-success"
+          (click)="finalizeMerge()">
+          Terminer ✨
         </button>
       </div>
     </div>

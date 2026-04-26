@@ -78,8 +78,8 @@
                [style.color]="block.textColor"
                [class]="block.id"
                [ngClass]="{
-                 'block-live': activeBlocks[block.id]?.isTyping,
-                 'block-pending': activeBlocks[block.id]?.isPending
+                 'block-live': !!activeBlocks[block.id]?.isTyping,
+                 'block-pending': !!activeBlocks[block.id]?.isPending
                }">
             
             <!-- Badge membre actif -->

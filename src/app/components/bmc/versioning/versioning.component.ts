@@ -16,24 +16,25 @@ export class VersioningComponent implements OnInit {
   mainBranchId: string | null = null;
   isLoading = false;
 
-  // Conflict Resolution State
-  isMerging = false;
-  sessionId: string | null = null;
-  conflicts: { [key: string]: BlocConflict } = {};
-  resolvedBlocs = new Set<string>();
-  customChoices: { [key: string]: string } = {};
-  currentStep = 0;
-  hasConflicts = false;
+  // ── Variables d'état de Merge ────────────────────────────────────
+  isMerging        = false;
+  sessionId        : string | null = null;
+  conflicts        : any = {};
+  hasConflicts     = false;
+  currentStep      = 0;
+  conflictKeys     : string[] = [];          // ✅ liste ordonnée des blocs en conflit
+  currentConflict  : any = null;             // ✅ conflit actuellement affiché
+  customTagsInput  = '';                     // ✅ champ textarea personnalisation
+  resolvedBlocs    = new Set<string>();
 
-  // Branch Editing State
-  isEditing = false;
-  editingBranch: BranchDTO | null = null;
-  editingSnapshot: { [key: string]: string[] } = {};
-  newTagInputs: { [key: string]: string } = {};
+  // ── Variables d'état d'Édition ──────────────────────────────────
+  isEditing        = false;
+  editingBranch    : BranchDTO | null = null;
+  editingSnapshot  : { [key: string]: string[] } = {};
+  newTagInputs     : { [key: string]: string } = {};
+  showHistory      = true;
 
-  showHistory = true;
-
-  Object = Object;
+  Object           = Object;                 // ✅ pour Object.keys dans le template
   
   constructor(private versioningService: VersioningService) {}
 
@@ -108,23 +109,27 @@ export class VersioningComponent implements OnInit {
 
   startMerge(sourceId: string): void {
     if (!this.mainBranchId) return;
-    console.log(`🚀 Tentative de merge : Source=${sourceId} -> Target(main)=${this.mainBranchId}`);
     this.isLoading = true;
 
     this.versioningService.startMerge(sourceId, this.mainBranchId).subscribe({
       next: (res: any) => {
-        this.isLoading = false;
-        const sid = res.session_id || res.sessionId;
-        
-        // Force opening the modal for review
         this.isMerging = true;
-        this.sessionId = sid || null;
+        this.sessionId = res.session_id || res.sessionId;
         this.conflicts = res.conflicts || {};
-        this.hasConflicts = res.has_conflicts ?? (Object.keys(this.conflicts).length > 0);
+        this.hasConflicts = res.has_conflicts || res.hasConflicts || Object.keys(this.conflicts).length > 0;
+
+        // ✅ Initialiser le stepper
+        this.conflictKeys = Object.keys(this.conflicts);
         this.currentStep = 0;
-        this.resolvedBlocs.clear();
+        this.currentConflict = null;
+        this.customTagsInput = '';
+        this.resolvedBlocs = new Set<string>();
         
-        console.log('🚀 Interface de merge ouverte. SessionId:', sid, 'Conflits:', this.hasConflicts);
+        if (this.hasConflicts) {
+          this.loadCurrentConflict();
+        }
+
+        this.isLoading = false;
       },
       error: (err) => {
         this.isLoading = false;
@@ -134,36 +139,65 @@ export class VersioningComponent implements OnInit {
     });
   }
 
-  resolveConflict(blocName: string, choice: string): void {
+  loadCurrentConflict() {
+    if (this.conflictKeys.length === 0) return;
+    const key = this.conflictKeys[this.currentStep];
+    const data = this.conflicts[key];
+
+    this.currentConflict = {
+      blocName: key,
+      mainTags: data?.mainTags || [],
+      sourceTags: data?.sourceTags || [],
+      originTags: data?.originTags || [],
+    };
+    this.customTagsInput = '';
+  }
+
+  resolveAndNext(choice: string) {
+    if (!this.sessionId || !this.currentConflict) return;
+    const blocName = this.currentConflict.blocName;
+    const customTags = choice === 'CUSTOM'
+      ? this.customTagsInput.split('\n').map(t => t.trim()).filter(t => t)
+      : undefined;
+
+    this.versioningService
+      .resolveConflict(this.sessionId, blocName, choice, customTags)
+      .subscribe({
+        next: () => {
+          this.resolvedBlocs.add(blocName);
+          if (this.currentStep < this.conflictKeys.length - 1) {
+            this.currentStep++;
+            this.loadCurrentConflict();
+          } else {
+            this.finalizeMerge();
+          }
+        },
+        error: (err) => {
+          console.error('Erreur résolution:', err);
+          alert('Erreur lors de la résolution.');
+        }
+      });
+  }
+
+  finalizeMerge() {
     if (!this.sessionId) return;
-
-    let customTags: string[] | undefined;
-    if (choice === 'CUSTOM') {
-      const text = this.customChoices[blocName] || '';
-      customTags = text.split('\n').map(t => t.trim()).filter(t => t.length > 0);
-    }
-
     this.isLoading = true;
-    this.versioningService.resolveConflict(this.sessionId, blocName, choice, customTags).subscribe({
+    this.versioningService.finalizeMerge(this.sessionId).subscribe({
       next: () => {
-        this.resolvedBlocs.add(blocName);
-        this.isLoading = false;
+        this.isMerging = false;
+        this.hasConflicts = false;
+        this.conflicts = {};
+        this.sessionId = null;
+        alert('✅ Merge finalisé avec succès !');
+        this.loadAll();
+        this.versionRestored.emit();
       },
       error: (err) => {
         this.isLoading = false;
-        console.error('Erreur résolution:', err);
-        alert('Erreur lors de la résolution du conflit.');
+        console.error('Erreur finalisation:', err);
+        alert('Erreur lors de la finalisation.');
       }
     });
-  }
-
-  nextStep(): void {
-    const keys = Object.keys(this.conflicts);
-    if (this.currentStep < keys.length - 1) {
-      this.currentStep++;
-    } else {
-      this.finalizeMerge();
-    }
   }
 
 
@@ -256,25 +290,6 @@ export class VersioningComponent implements OnInit {
     });
   }
 
-  finalizeMerge(): void {
-    if (!this.sessionId) return;
-    this.isLoading = true;
-
-    this.versioningService.finalizeMerge(this.sessionId).subscribe({
-      next: () => {
-        this.isMerging = false;
-        this.sessionId = null;
-        alert('✅ Merge finalisé, version officielle mise à jour !');
-        this.loadAll();
-        this.versionRestored.emit();
-      },
-      error: (err) => {
-        this.isLoading = false;
-        console.error('Erreur finalisation:', err);
-        alert('Erreur lors de la finalisation.');
-      }
-    });
-  }
 
   restoreCommit(commitId: string): void {
     if (!this.mainBranchId) return;
