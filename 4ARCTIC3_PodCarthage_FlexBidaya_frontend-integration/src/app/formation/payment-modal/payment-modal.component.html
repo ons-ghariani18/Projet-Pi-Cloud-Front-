@@ -1,0 +1,150 @@
+<!-- BACKDROP -->
+<div class="pm-backdrop" (click)="close()"></div>
+
+<!-- MODAL -->
+<div class="pm-modal">
+
+  <!-- SUCCESS STATE -->
+  <div class="pm-success" *ngIf="successData">
+    <div class="pm-success-icon">✅</div>
+    <h2>Payment Successful!</h2>
+    <p class="pm-success-sub">Your exam access has been unlocked.</p>
+    <div class="pm-success-details">
+      <div class="pm-detail-row">
+        <span class="pm-detail-label">Transaction ID</span>
+        <span class="pm-detail-val pm-txid">{{ successData.transactionId }}</span>
+      </div>
+      <div class="pm-detail-row">
+        <span class="pm-detail-label">Card</span>
+        <span class="pm-detail-val">{{ successData.maskedCard }}</span>
+      </div>
+      <div class="pm-detail-row">
+        <span class="pm-detail-label">Amount paid</span>
+        <span class="pm-detail-val pm-amount">{{ successData.amount }} TND</span>
+      </div>
+      <div class="pm-detail-row" *ngIf="successData.examInfo">
+        <span class="pm-detail-label">Exam</span>
+        <span class="pm-detail-val">{{ successData.examInfo }}</span>
+      </div>
+    </div>
+    <button class="pm-btn-close" (click)="close()">Close & Continue →</button>
+  </div>
+
+  <!-- PAYMENT FORM -->
+  <div *ngIf="!successData">
+
+    <!-- Header -->
+    <div class="pm-header">
+      <div class="pm-header-left">
+        <div class="pm-logo-wrap">
+          <img src="assets/logo.png" alt="FlexBidaya" />
+        </div>
+        <div>
+          <h2 class="pm-title">Secure Payment</h2>
+          <p class="pm-subtitle">{{ formationTitle }}</p>
+        </div>
+      </div>
+      <button class="pm-x" (click)="close()">✕</button>
+    </div>
+
+    <!-- Card Preview -->
+    <div class="pm-card-preview" [class.pm-card-flipped]="cardFlipped">
+      <!-- Front -->
+      <div class="pm-card-face pm-card-front">
+        <div class="pm-card-top">
+          <div class="pm-chip"></div>
+          <div class="pm-card-type-logo" *ngIf="cardType">
+            <img *ngIf="cardType === 'visa'"       src="https://upload.wikimedia.org/wikipedia/commons/4/41/Visa_Logo.png" alt="Visa" />
+            <img *ngIf="cardType === 'mastercard'" src="https://upload.wikimedia.org/wikipedia/commons/a/a4/Mastercard_2019_logo.svg" alt="MC" />
+            <span *ngIf="cardType === 'amex'"      class="pm-card-label">AMEX</span>
+            <span *ngIf="cardType === 'discover'"  class="pm-card-label">DISCOVER</span>
+          </div>
+          <div class="pm-card-type-logo" *ngIf="!cardType">
+            <span class="pm-card-label">💳</span>
+          </div>
+        </div>
+        <div class="pm-card-number-display">{{ maskedPreview }}</div>
+        <div class="pm-card-bottom">
+          <div>
+            <div class="pm-card-field-label">Card Holder</div>
+            <div class="pm-card-field-val">{{ cardHolder || 'FULL NAME' }}</div>
+          </div>
+          <div>
+            <div class="pm-card-field-label">Expires</div>
+            <div class="pm-card-field-val">{{ expiryPreview }}</div>
+          </div>
+        </div>
+      </div>
+      <!-- Back -->
+      <div class="pm-card-face pm-card-back">
+        <div class="pm-card-stripe"></div>
+        <div class="pm-cvv-band">
+          <div class="pm-cvv-label">CVV</div>
+          <div class="pm-cvv-value">{{ cvv ? '•'.repeat(cvv.length) : '•••' }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Amount badge -->
+    <div class="pm-amount-badge">
+      <span class="pm-amount-icon">💳</span>
+      Total: <strong>{{ amount }} TND</strong>
+    </div>
+
+    <!-- Form -->
+    <form class="pm-form" (ngSubmit)="submit()">
+
+      <!-- Card Holder -->
+      <div class="pm-field">
+        <label class="pm-label">Cardholder Name</label>
+        <input class="pm-input" type="text" placeholder="John Doe"
+               [(ngModel)]="cardHolder" name="cardHolder" autocomplete="cc-name" />
+      </div>
+
+      <!-- Card Number -->
+      <div class="pm-field">
+        <label class="pm-label">Card Number</label>
+        <div class="pm-input-icon-wrap">
+          <input class="pm-input" type="text" placeholder="1234 5678 9012 3456"
+                 maxlength="19" (input)="onCardInput($event)"
+                 name="cardNumber" autocomplete="cc-number" inputmode="numeric" />
+          <span class="pm-input-icon">
+            <span *ngIf="cardType === 'visa'">🟦</span>
+            <span *ngIf="cardType === 'mastercard'">🔴</span>
+            <span *ngIf="!cardType">💳</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Expiry + CVV -->
+      <div class="pm-row">
+        <div class="pm-field">
+          <label class="pm-label">Expiry Date</label>
+          <input class="pm-input" type="text" placeholder="MM/YY"
+                 maxlength="5" (input)="onExpiryInput($event)"
+                 name="expiry" autocomplete="cc-exp" inputmode="numeric" />
+        </div>
+        <div class="pm-field">
+          <label class="pm-label">CVV</label>
+          <input class="pm-input" type="password" placeholder="•••"
+                 maxlength="4" [(ngModel)]="cvv" name="cvv"
+                 (focus)="onCvvFocus()" (blur)="onCvvBlur()"
+                 autocomplete="cc-csc" inputmode="numeric" />
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="pm-error" *ngIf="errorMsg">
+        <span>⚠️</span> {{ errorMsg }}
+      </div>
+
+      <!-- Submit -->
+      <button class="pm-btn-pay" type="submit" [disabled]="loading">
+        <span *ngIf="!loading">🔒 Pay {{ amount }} TND</span>
+        <span *ngIf="loading" class="pm-spinner-inline"></span>
+      </button>
+
+      <p class="pm-secure-note">🔐 256-bit SSL encrypted · Your data is safe</p>
+    </form>
+  </div>
+</div>

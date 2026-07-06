@@ -1,0 +1,267 @@
+<div class="me-page">
+
+  <!-- ═══════════════════════════════════════════ HEADER ═══ -->
+  <header class="me-header">
+    <div class="me-brand">
+      <div class="me-logo">
+        <img src="/assets/logo.png" alt="Book" class="me-logo-img" />
+      </div>
+      <div>
+        <div class="me-title">My Space</div>
+        <div class="me-sub">Courses</div>
+      </div>
+    </div>
+
+    <nav class="me-tabs">
+      <button [class.me-tab-active]="onglet === 'formations'" (click)="onglet = 'formations'">
+        ⊞ My Courses
+      </button>
+      <button [class.me-tab-active]="onglet === 'examens'" (click)="onglet = 'examens'">
+        ✦ Exams
+      </button>
+      <button [class.me-tab-active]="onglet === 'classement'" (click)="onglet = 'classement'">
+        🏆 Leaderboard
+      </button>
+       <!-- ✅ NOUVEAU BOUTON ANALYSE -->
+      <button routerLink="/dashboard">
+        Actualites
+      </button>
+      <button class="nav-btn" routerLink="/startups">
+        🚀 Startups
+      </button>
+    </nav>
+
+    <div class="me-user-info">
+      <div class="me-avatar" title="{{ getCurrentUsername() }}">{{ getInitiales() }}</div>
+      <span class="me-username">{{ getCurrentUsername() }}</span>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════ STATS ═══ -->
+  <div class="me-stats">
+    <div class="stat-card">
+      <div class="stat-label">COURSES</div>
+      <div class="stat-value">{{ inscriptions.length }}</div>
+      <div class="stat-hint"><span class="dot green"></span> {{ getNombreCompletes() }} completed</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">AVG. PROGRESS</div>
+      <div class="stat-value blue">{{ getProgressionMoyenne() }}%</div>
+      <div class="stat-hint"><span class="green">+12% this month</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">CERTIFICATIONS</div>
+      <div class="stat-value">{{ certifications.length }}</div>
+      <div class="stat-hint"><span class="dot blue"></span> Exam passed</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ MES COURS ═══ -->
+  <div *ngIf="onglet === 'formations'">
+    <div class="section-title">MY COURSES</div>
+
+    <div class="courses-grid">
+      <div class="course-card" *ngFor="let ins of inscriptions">
+
+        <!-- Image de couverture de la formation -->
+        <div class="cc-cover">
+          <img *ngIf="ins.formation.cheminImage"
+            [src]="ins.formation.cheminImage.startsWith('http') ? ins.formation.cheminImage : ('http://localhost:8080/' + ins.formation.cheminImage)"
+            [alt]="ins.formation.titre" class="cc-cover-img" (error)="$any($event.target).style.display='none'" />
+          <div class="cc-cover-placeholder" *ngIf="!ins.formation.cheminImage">
+            {{ ins.formation.titre.charAt(0).toUpperCase() || '📚' }}
+          </div>
+          <div class="cc-cover-overlay">
+            <span class="cc-cover-badge badge-done" *ngIf="ins.statut === 'TERMINEE'">✓ Completed</span>
+            <span class="cc-cover-badge badge-progress-pill" *ngIf="ins.statut === 'EN_COURS'">In Progress</span>
+            <span class="cc-cover-badge badge-new" *ngIf="ins.statut === 'NON_COMMENCEE'">Not Started</span>
+          </div>
+        </div>
+
+        <!-- Card Header: Titre + Statut -->
+        <div class="cc-top">
+          <h3 class="cc-title">{{ ins.formation.titre }}</h3>
+        </div>
+
+        <!-- Leçon Chips -->
+        <div class="cc-chips" *ngIf="progressionsMap[ins.id]?.length">
+          <span class="chip" *ngFor="let p of progressionsMap[ins.id]; let idx = index"
+            [class.chip-done]="p.statut === 'COMPLETE'" [class.chip-locked]="isLessonLocked(ins.id, p.lecon, idx)">
+            <span *ngIf="p.statut === 'COMPLETE'">✓</span>
+            {{ p.lecon.titre.length > 16 ? (p.lecon.titre | slice:0:16) + '…' : p.lecon.titre }}
+          </span>
+        </div>
+
+        <!-- Barre de progression -->
+        <div class="cc-prog-row">
+          <span class="cc-prog-label">Course Progress</span>
+          <span class="cc-prog-pct">{{ getProgressionPct(ins) }}%</span>
+        </div>
+        <div class="cc-prog-track">
+          <div class="cc-prog-fill" [style.width.%]="getProgressionPct(ins)"></div>
+        </div>
+
+        <!-- Statut box -->
+
+        <div class="info-box orange-box" *ngIf="ins.statut === 'TERMINEE' && !ins.isPremiumPaid">
+          <div class="ib-row"><span>💳</span> <strong>Payment required</strong> to unlock the final exam.</div>
+          <div *ngIf="getProgressionPct(ins) < 100" style="color: #ea580c; font-size: 0.85rem; margin-top: 5px; margin-bottom: 5px;">
+             ⚠️ You must complete all lessons before paying.
+          </div>
+          <button class="btn-stripe" (click)="payerExamen(ins)" [disabled]="getProgressionPct(ins) < 100" [style.opacity]="getProgressionPct(ins) < 100 ? '0.5' : '1'">💳 Pay for exam</button>
+        </div>
+
+        <!-- Paid but not taken yet -->
+        <div class="info-box blue-box"
+          *ngIf="ins.statut === 'TERMINEE' && ins.isPremiumPaid && !soumissionsFormationMap[ins.formation.id]">
+          <div class="ib-row"><span class="ib-dot blue-dot"></span> <strong>Course Completed</strong></div>
+          <div class="ib-row"><span style="font-size:1rem;">☑</span> Payment confirmed — check your email to access the
+            exam</div>
+          <div class="ib-sub">An exam access link has been sent to your email.</div>
+        </div>
+
+        <!-- Exam taken -->
+        <div class="info-box green-box" *ngIf="soumissionsFormationMap[ins.formation.id]">
+          <div class="ib-row">👑 Exam submitted! Score: <strong>{{ soumissionsFormationMap[ins.formation.id].scoreObtenu
+              }} pts</strong></div>
+        </div>
+
+        <!-- Remarques Mentor -->
+        <div class="cc-remarks" *ngIf="progressionsMap[ins.id]?.length">
+          <ng-container *ngFor="let p of progressionsMap[ins.id]">
+            <div class="remark" *ngIf="p.remarqueMentor">
+              <strong>Mentor ({{ p.lecon.titre }}) :</strong> {{ p.remarqueMentor }}
+            </div>
+          </ng-container>
+        </div>
+
+        <!-- Actions -->
+        <div class="cc-actions">
+          <button class="btn-continuer" (click)="allerAuCours(ins)"
+            *ngIf="ins.statut !== 'TERMINEE' || hasLeconEnCours(ins)">
+            Continue course
+          </button>
+
+          <button class="btn-reouv" *ngIf="ins.statut === 'TERMINEE'" (click)="demanderReouvertureFormation(ins)"
+            [disabled]="reouvertureEnvoyee[ins.id] || reouvertureLoading[ins.id]">
+            <span *ngIf="reouvertureLoading[ins.id]">⏳ Sending…</span>
+            <span *ngIf="!reouvertureLoading[ins.id] && !reouvertureEnvoyee[ins.id]">Request reopening</span>
+            <span *ngIf="reouvertureEnvoyee[ins.id]">✓ Request sent</span>
+          </button>
+
+          <button class="btn-cert"
+            *ngIf="certForFormation(ins) && ins.isPremiumPaid && soumissionsFormationMap[ins.formation.id]"
+            (click)="voirCertificat(ins)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M9 12l2 2 4-4"/><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> View Certificate
+          </button>
+        </div>
+
+        <p *ngIf="reouvertureMessage[ins.id]" class="msg-reouverture">{{ reouvertureMessage[ins.id] }}</p>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="inscriptions.length === 0">
+      <div style="font-size:2.5rem; margin-bottom:12px;">🚀</div>
+      <p>You are not enrolled in any module.</p>
+      <button routerLink="/formations" class="btn-continuer">Explore the catalog</button>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════ EXAMENS ═══ -->
+  <div *ngIf="onglet === 'examens'">
+    <div class="section-title">MY SCHEDULED EXAMS</div>
+    <div class="course-card" style="padding: 24px;">
+      <app-calendrier-tests></app-calendrier-tests>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ CLASSEMENT ═══ -->
+  <div *ngIf="onglet === 'classement'">
+    <div class="section-title">LEADERBOARD</div>
+    <div class="course-card" style="padding: 24px;">
+      <app-leaderboard></app-leaderboard>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ RECOMMANDATIONS IA ═══ -->
+  <div class="rec-section">
+    <div class="rec-header">
+      <div class="rec-title-wrap">
+        <span class="rec-icon">🤖</span>
+        <div>
+          <h2 class="rec-title">Courses Recommended for You</h2>
+          <p class="rec-sub">
+            <span *ngIf="recMethod === 'tfidf_cosine'">
+              Based on your courses · AI Hybrid (TF-IDF + Level + Popularity)
+              <span *ngIf="recUserLevel" style="margin-left:6px; font-weight:700; color:#6366f1;">
+                · Level detected: {{ recUserLevel }}
+              </span>
+            </span>
+            <span *ngIf="recMethod === 'popularity'">Popular courses · Start your journey!</span>
+            <span *ngIf="recMethod === 'consolidation'">You're enrolled in all courses! 🎓 Here are your top courses to
+              review & consolidate.</span>
+            <span *ngIf="!recMethod && !recLoading">Personalized recommendations</span>
+          </p>
+        </div>
+      </div>
+      <span class="rec-badge" *ngIf="recMethod === 'tfidf_cosine'">🧠 AI Active</span>
+      <span class="rec-badge" style="background:linear-gradient(135deg,#f59e0b,#fbbf24)"
+        *ngIf="recMethod === 'popularity'">⭐ Popular</span>
+      <span class="rec-badge rec-badge-consolidation" *ngIf="recMethod === 'consolidation'">🎓 Consolidation</span>
+    </div>
+
+    <div class="rec-loading" *ngIf="recLoading">
+      <div class="rec-spinner"></div><span>Analyzing your profile...</span>
+    </div>
+
+    <div class="rec-grid" *ngIf="!recLoading && recommandations.length > 0">
+      <div class="rec-card" *ngFor="let f of recommandations; let i = index" [style.animation-delay]="(i * 80) + 'ms'">
+        <div class="rec-score-badge">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01z" />
+          </svg>
+          {{ f.score || (f.scoreRaw ? (f.scoreRaw * 100 | number:'1.0-0') + '%' : '—') }}
+        </div>
+        <div class="rec-img">
+          <img *ngIf="f.cheminImage"
+            [src]="f.cheminImage.startsWith('http') ? f.cheminImage : ('http://localhost:8080/' + f.cheminImage)"
+            [alt]="f.titre" (error)="$any($event.target).style.display='none'">
+          <div class="rec-img-placeholder" *ngIf="!f.cheminImage">{{ f.categorie ? f.categorie.charAt(0) : '📚' }}</div>
+        </div>
+        <div class="rec-body">
+          <div class="rec-tags">
+            <span class="rec-tag rec-cat">{{ f.categorie }}</span>
+            <span class="rec-tag rec-niv">{{ f.niveau }}</span>
+          </div>
+          <h3 class="rec-name">{{ f.titre }}</h3>
+          <p class="rec-desc">{{ ((f.description || '').length > 80 ? (f.description | slice:0:80) + '…' :
+            f.description) }}</p>
+          <div class="rec-meta">
+            <span>⏱ {{ f.dureeHeures }}h</span>
+            <span>👥 {{ f.nombreInscrits ?? 0 }} enrolled</span>
+          </div>
+          <button class="rec-btn" (click)="allerVersFormation(f.id)">View course →</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="rec-empty" *ngIf="!recLoading && recommandations.length === 0">
+      <span>🎯</span>
+      <p>Enroll in courses to get personalized recommendations!</p>
+      <button routerLink="/catalogue" class="btn-continuer">Explore catalog</button>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════ PAYMENT MODAL ══════════════════════════ -->
+  <app-payment-modal
+    *ngIf="showPaymentModal && paymentIns"
+    [inscriptionId]="paymentIns.id"
+    [formationTitle]="paymentIns.formation.titre"
+    [amount]="50"
+    (closed)="closePaymentModal()"
+    (paymentSuccess)="onPaymentSuccess($event)">
+  </app-payment-modal>
+
+</div>

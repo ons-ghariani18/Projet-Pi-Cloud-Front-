@@ -1,0 +1,37 @@
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.modal-overlay.show { opacity: 1; pointer-events: all; }
+.modal {
+  background: white; border-radius: 18px; width: 560px; max-width: 95vw;
+  max-height: 90vh; overflow-y: auto;
+  transform: translateY(20px) scale(.97); transition: transform .25s;
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+}
+.modal-overlay.show .modal { transform: translateY(0) scale(1); }
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 22px 26px; border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: white; z-index: 1; border-radius: 18px 18px 0 0;
+}
+.modal-title { font-size: 17px; font-weight: 700; }
+.modal-close {
+  width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--muted2); font-size: 18px; background: none;
+  transition: all .15s;
+}
+.modal-close:hover { border-color: var(--red); color: var(--red); }
+.modal-body { padding: 24px 26px; }
+
+.status-modal { padding: 10px 0; }
+.status-option {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+  border-radius: 10px; cursor: pointer; transition: background .12s;
+}
+.status-option:hover { background: var(--purple-soft); }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.status-option-label { font-size: 14px; font-weight: 600; }
+.status-option-sub { font-size: 12px; color: var(--muted); }

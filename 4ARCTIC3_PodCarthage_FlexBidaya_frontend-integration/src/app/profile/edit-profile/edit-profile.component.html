@@ -1,0 +1,119 @@
+<div class="edit-profile-overlay" (click)="cancelEdit()">
+  <div class="edit-profile-modal" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="modal-header">
+      <h2>Edit Profile</h2>
+      <button class="close-btn" (click)="cancelEdit()">
+        <span>×</span>
+      </button>
+    </div>
+
+    <!-- Contenu -->
+    <div class="modal-content">
+      <!-- Photo de profil -->
+      <div class="profile-image-section">
+        <div class="current-avatar">
+          <img *ngIf="editData.profileImage" [src]="editData.profileImage" alt="Profile picture" />
+          <span *ngIf="!editData.profileImage" class="avatar-placeholder">
+            {{ editData.username.charAt(0).toUpperCase() }}
+          </span>
+        </div>
+        
+        <div class="image-controls">
+          <input 
+            type="file" 
+            id="profileImage" 
+            accept="image/*" 
+            (change)="onFileSelected($event)"
+            style="display: none;"
+          />
+          <label for="profileImage" class="upload-btn">
+            <span>Change Photo</span>
+          </label>
+          <button *ngIf="editData.profileImage" class="remove-btn" (click)="removeProfileImage()">
+            <span>Remove</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Formulaire -->
+      <form class="edit-form" (ngSubmit)="updateProfile()">
+        <!-- Username -->
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input 
+            type="text" 
+            id="username" 
+            [(ngModel)]="editData.username" 
+            name="username"
+            placeholder="Your username"
+            required
+            minlength="3"
+            class="form-input"
+          />
+          <small class="form-help">3 characters minimum</small>
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input 
+            type="email" 
+            id="email" 
+            [(ngModel)]="editData.email" 
+            name="email"
+            placeholder="your.email@example.com"
+            class="form-input"
+          />
+        </div>
+
+        <!-- Bio -->
+        <div class="form-group">
+          <label for="bio">Bio</label>
+          <textarea 
+            id="bio" 
+            [(ngModel)]="editData.bio" 
+            name="bio"
+            placeholder="Tell us about yourself..."
+            rows="4"
+            maxlength="200"
+            class="form-textarea"
+          ></textarea>
+          <small class="form-help">{{ editData.bio.length }}/200 characters</small>
+        </div>
+
+        <!-- Messages -->
+        <div *ngIf="error" class="error-message">
+          <span class="error-icon">!</span>
+          {{ error }}
+        </div>
+
+        <div *ngIf="success" class="success-message">
+          <span class="success-icon">!</span>
+          {{ success }}
+        </div>
+
+        <!-- Actions -->
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="resetForm()" [disabled]="!hasChanges()">
+            Reset
+          </button>
+          <button type="button" class="btn-secondary" (click)="cancelEdit()">
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            class="btn-primary" 
+            [disabled]="loading || !hasChanges()"
+          >
+            <span *ngIf="!loading">Save Changes</span>
+            <span *ngIf="loading" class="loading-spinner">
+              <span class="spinner"></span>
+              Saving...
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

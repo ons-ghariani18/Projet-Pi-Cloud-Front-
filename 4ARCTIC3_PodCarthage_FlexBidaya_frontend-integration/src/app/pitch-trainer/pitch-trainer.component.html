@@ -1,0 +1,325 @@
+<div class="pt-root">
+
+  <!-- ═══ HEADER ═══ -->
+  <div class="pt-header">
+    <div class="pt-header-left">
+      <div class="pt-logo-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2a5 5 0 1 1 0 10A5 5 0 0 1 12 2zm0 12c5.33 0 8 2.67 8 4v2H4v-2c0-1.33 2.67-4 8-4z" fill="currentColor" opacity="0.2"/>
+          <circle cx="12" cy="7" r="3.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+          <path d="M5 21v-1a7 7 0 0 1 14 0v1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          <path d="M19 8l2-2m0 0l-2-2m2 2h-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="pt-title">Pitch Trainer <span class="pt-chip">IA</span></h1>
+        <p class="pt-subtitle">Coach intelligent de présentation — MediaPipe Vision</p>
+      </div>
+    </div>
+    <div class="pt-header-right">
+      <div class="pt-session-pill" [class.active]="isRunning">
+        <span class="pt-session-dot"></span>
+        {{ isRunning ? 'Session active' : 'En attente' }}
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MAIN GRID ═══ -->
+  <div class="pt-grid">
+
+    <!-- ─── COL GAUCHE : Vidéo + Contrôles ─── -->
+    <div class="pt-col-left">
+
+      <!-- Vidéo -->
+      <div class="pt-video-card">
+        <div class="pt-video-wrap" [class.running]="isRunning">
+          <video #videoEl autoplay muted playsinline
+                 [style.display]="isRunning ? 'block' : 'none'"></video>
+          <canvas #canvasEl style="display:none;"></canvas>
+
+          <!-- Overlay skeleton caméra inactive -->
+          <div class="pt-cam-placeholder" *ngIf="!isRunning">
+            <div class="pt-cam-icon">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="7" width="20" height="14" rx="3" stroke="currentColor" stroke-width="1.2"/>
+                <circle cx="12" cy="14" r="3.5" stroke="currentColor" stroke-width="1.2"/>
+                <path d="M8 7V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.2"/>
+                <circle cx="17.5" cy="10.5" r="0.8" fill="currentColor"/>
+              </svg>
+            </div>
+            <p class="pt-cam-msg">Caméra inactive</p>
+            <p class="pt-cam-hint">Cliquez sur "Démarrer" pour lancer l'analyse</p>
+          </div>
+
+          <!-- Timer badge -->
+          <div class="pt-timer-badge" *ngIf="isRunning">
+            <span class="pt-rec-dot"></span>{{ elapsedStr }}
+          </div>
+
+          <!-- Score overlay live -->
+          <div class="pt-score-overlay" *ngIf="isRunning && result && result.detected">
+            <span class="pt-overlay-val"
+                  [class.good]="result.confidence >= 70"
+                  [class.avg]="result.confidence >= 45 && result.confidence < 70"
+                  [class.low]="result.confidence < 45">
+              {{ result.confidence }}%
+            </span>
+            <span class="pt-overlay-lbl">Score live</span>
+          </div>
+
+          <!-- Skeleton loader -->
+          <div class="pt-loading-ring" *ngIf="isAnalyzing"></div>
+        </div>
+
+        <!-- Erreur caméra -->
+        <div class="pt-error-banner" *ngIf="errorMsg">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+          </svg>
+          {{ errorMsg }}
+        </div>
+      </div>
+
+      <!-- Boutons contrôle -->
+      <div class="pt-controls">
+        <button class="pt-btn pt-btn--start" (click)="start()" [disabled]="isRunning">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          Démarrer le pitch
+        </button>
+        <button class="pt-btn pt-btn--stop" (click)="stop()" [disabled]="!isRunning">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+          Arrêter
+        </button>
+        <button class="pt-btn pt-btn--reset" (click)="resetSession()" [disabled]="isRunning">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          Réinitialiser
+        </button>
+      </div>
+
+      <!-- Conseil du moment -->
+      <div class="pt-tip-card" *ngIf="currentTip">
+        <div class="pt-tip-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26A7 7 0 0 1 12 2zM9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1z"/></svg>
+        </div>
+        <div>
+          <p class="pt-tip-label">Conseil du moment</p>
+          <p class="pt-tip-text">{{ currentTip }}</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ─── COL DROITE : Métriques + Feedback ─── -->
+    <div class="pt-col-right">
+
+      <!-- Métriques temps réel -->
+      <div class="pt-metrics-card" *ngIf="result && result.detected">
+
+        <!-- Score principal -->
+        <div class="pt-main-score">
+          <div class="pt-donut-wrap">
+            <svg class="pt-donut" viewBox="0 0 100 100">
+              <circle class="pt-donut-bg" cx="50" cy="50" r="40" />
+              <circle class="pt-donut-fill"
+                      cx="50" cy="50" r="40"
+                      [style.stroke]="getBarColor(result.confidence)"
+                      [style.stroke-dasharray]="getDonutDash(result.confidence)" />
+            </svg>
+            <div class="pt-donut-center">
+              <span class="pt-donut-val" [style.color]="getBarColor(result.confidence)">{{ result.confidence }}</span>
+              <span class="pt-donut-pct">%</span>
+            </div>
+          </div>
+          <div class="pt-main-score-info">
+            <p class="pt-main-score-title">Score global</p>
+            <p class="pt-main-score-label" [style.color]="getBarColor(result.confidence)">
+              {{ getScoreLevel(result.confidence) }}
+            </p>
+            <div class="pt-pulse-bars">
+              <span *ngFor="let b of pulseBars" class="pt-pulse-bar"
+                    [style.height]="b + 'px'"
+                    [style.background]="getBarColor(result.confidence)"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-divider"></div>
+
+        <!-- Barres détail -->
+        <div class="pt-bars-section">
+          <p class="pt-section-label">Analyse détaillée</p>
+
+          <div class="pt-bar-item">
+            <div class="pt-bar-meta">
+              <span class="pt-bar-name">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 1 0 8 4 4 0 0 1 0-8zM6 21v-2a6 6 0 0 1 12 0v2"/></svg>
+                Posture
+              </span>
+              <span class="pt-bar-val" [style.color]="getBarColor(result.posture)">{{ result.posture }}%</span>
+            </div>
+            <div class="pt-bar-track">
+              <div class="pt-bar-fill" [style.width.%]="result.posture" [style.background]="getBarColor(result.posture)"></div>
+            </div>
+          </div>
+
+          <div class="pt-bar-item">
+            <div class="pt-bar-meta">
+              <span class="pt-bar-name">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v0m0 0V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7m4-3V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v0"/><path d="M6 11V8a2 2 0 0 0-2-2 2 2 0 0 0-2 2v3c0 3 2 5 6 8 4-3 6-5 6-8"/></svg>
+                Gestuelle mains
+              </span>
+              <span class="pt-bar-val" [style.color]="getBarColor(result.hands)">{{ result.hands }}%</span>
+            </div>
+            <div class="pt-bar-track">
+              <div class="pt-bar-fill" [style.width.%]="result.hands" [style.background]="getBarColor(result.hands)"></div>
+            </div>
+          </div>
+
+          <div class="pt-bar-item">
+            <div class="pt-bar-meta">
+              <span class="pt-bar-name">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/></svg>
+                Stabilité tête
+              </span>
+              <span class="pt-bar-val" [style.color]="getBarColor(result.head)">{{ result.head }}%</span>
+            </div>
+            <div class="pt-bar-track">
+              <div class="pt-bar-fill" [style.width.%]="result.head" [style.background]="getBarColor(result.head)"></div>
+            </div>
+          </div>
+
+          <div class="pt-bar-item" *ngIf="result.eyeContact !== undefined">
+            <div class="pt-bar-meta">
+              <span class="pt-bar-name">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                Contact visuel
+              </span>
+              <span class="pt-bar-val" [style.color]="getBarColor(result.eyeContact)">{{ result.eyeContact }}%</span>
+            </div>
+            <div class="pt-bar-track">
+              <div class="pt-bar-fill" [style.width.%]="result.eyeContact" [style.background]="getBarColor(result.eyeContact)"></div>
+            </div>
+          </div>
+
+          <div class="pt-bar-item" *ngIf="result.voiceRhythm !== undefined">
+            <div class="pt-bar-meta">
+              <span class="pt-bar-name">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+                Rythme vocal
+              </span>
+              <span class="pt-bar-val" [style.color]="getBarColor(result.voiceRhythm)">{{ result.voiceRhythm }}%</span>
+            </div>
+            <div class="pt-bar-track">
+              <div class="pt-bar-fill" [style.width.%]="result.voiceRhythm" [style.background]="getBarColor(result.voiceRhythm)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- État : pas encore démarré -->
+      <div class="pt-idle-card" *ngIf="!result && !isRunning">
+        <div class="pt-idle-icon">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+            <path d="M12 2a5 5 0 1 1 0 10A5 5 0 0 1 12 2zm0 12c5.33 0 8 2.67 8 4v2H4v-2c0-1.33 2.67-4 8-4z"/>
+          </svg>
+        </div>
+        <p class="pt-idle-title">Prêt pour votre pitch ?</p>
+        <p class="pt-idle-hint">Lancez la session pour que l'IA analyse votre gestuelle, posture et contact visuel en temps réel.</p>
+      </div>
+
+      <!-- Pas détecté -->
+      <div class="pt-nodetect-card" *ngIf="result && !result.detected">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+          <line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        <p>{{ result.message }}</p>
+        <p class="pt-nodetect-hint">Positionnez-vous face à la caméra</p>
+      </div>
+
+      <!-- Feedback instantané -->
+      <div class="pt-feedback-card" *ngIf="result && result.detected && result.feedback?.length">
+        <p class="pt-section-label">Feedback instantané</p>
+        <div class="pt-fb-list">
+          <div class="pt-fb-item"
+               *ngFor="let fb of result.feedback"
+               [class.fb-ok]="fb.type==='success'"
+               [class.fb-warn]="fb.type==='warning'"
+               [class.fb-err]="fb.type==='error'">
+            <svg class="pt-fb-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path *ngIf="fb.type==='success'" d="M9 12l2 2 4-4m-5 9A9 9 0 1 1 21 12 9 9 0 0 1 12 21z"/>
+              <path *ngIf="fb.type==='warning'" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <path *ngIf="fb.type==='error'" d="M10 14l2-2m0 0 2-2m-2 2-2-2m2 2 2 2m7-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+            </svg>
+            <span>{{ fb.text }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ RAPPORT FINAL ═══ -->
+  <div class="pt-report" *ngIf="sessionDone && sessionScores.length > 0">
+    <div class="pt-report-header">
+      <div>
+        <h3 class="pt-report-title">Rapport de session</h3>
+        <p class="pt-report-duration">Durée : {{ elapsedStr }} · {{ sessionScores.length }} analyses</p>
+      </div>
+      <div class="pt-report-badge" [class.good]="avgScore >= 70" [class.avg]="avgScore >= 45 && avgScore < 70" [class.low]="avgScore < 45">
+        {{ avgScore }}%
+      </div>
+    </div>
+
+    <p class="pt-report-verdict" [style.color]="getBarColor(avgScore)">{{ scoreLabel }}</p>
+
+    <!-- Mini graphique évolution -->
+    <div class="pt-sparkline-wrap" *ngIf="sessionScores.length > 1">
+      <p class="pt-section-label" style="margin-bottom:8px">Évolution durant la session</p>
+      <div class="pt-sparkline">
+        <svg width="100%" height="48" [attr.viewBox]="'0 0 ' + (sessionScores.length * 24) + ' 48'" preserveAspectRatio="none">
+          <polyline
+            [attr.points]="getSparklinePoints()"
+            fill="none"
+            stroke="#378ADD"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"/>
+          <circle *ngFor="let s of sessionScores; let i = index"
+                  [attr.cx]="i * 24 + 12"
+                  [attr.cy]="48 - (s / 100 * 40) - 4"
+                  r="3"
+                  [attr.fill]="getBarColor(s)"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Historique -->
+    <div class="pt-history" *ngIf="sessionHistory.length > 0">
+      <p class="pt-section-label" style="margin-bottom:8px">Historique des sessions</p>
+      <div class="pt-history-list">
+        <div class="pt-history-item" *ngFor="let s of sessionHistory; let i = index">
+          <div class="pt-history-num">#{{ sessionHistory.length - i }}</div>
+          <div class="pt-history-time">{{ s.time }}</div>
+          <div class="pt-history-bar">
+            <div class="pt-history-fill" [style.width.%]="s.score" [style.background]="getBarColor(s.score)"></div>
+          </div>
+          <div class="pt-history-val" [style.color]="getBarColor(s.score)">{{ s.score }}%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions post-session -->
+    <div class="pt-report-actions">
+      <button class="pt-action-btn" (click)="start()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        Nouveau pitch
+      </button>
+      <button class="pt-action-btn pt-action-btn--outline" (click)="exportReport()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exporter rapport
+      </button>
+    </div>
+  </div>
+
+</div>

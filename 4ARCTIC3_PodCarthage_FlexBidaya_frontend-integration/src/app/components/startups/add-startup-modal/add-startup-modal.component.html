@@ -1,0 +1,182 @@
+<div class="modal-overlay" [class.show]="isVisible" (click)="closeOnOutsideClick($event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">✦ New Startup</div>
+      </div>
+      <button class="modal-close" (click)="close()">×</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Steps bar -->
+      <div class="steps" *ngIf="!showSuccess">
+        <div class="step" [class.active]="step === 1" [class.done]="step > 1">
+          <div class="step-circle">1</div>
+          <div class="step-label">Information</div>
+        </div>
+        <div class="step-line" [class.done]="step > 1"></div>
+        <div class="step" [class.active]="step === 2" [class.done]="step > 2" [class.pending]="step < 2">
+          <div class="step-circle">2</div>
+          <div class="step-label">Team</div>
+        </div>
+        <div class="step-line" [class.done]="step > 2"></div>
+        <div class="step" [class.active]="step === 3" [class.pending]="step < 3">
+          <div class="step-circle">3</div>
+          <div class="step-label">Finances</div>
+        </div>
+      </div>
+
+      <!-- PANEL 1 -->
+      <div class="panel" [class.active]="step === 1 && !showSuccess">
+        <div class="section-title">General Information</div>
+        <div class="field">
+          <label>Project Name</label>
+          <input type="text" [(ngModel)]="form.name" placeholder="Your startup's name..." />
+        </div>
+        <div class="field">
+          <label>Description</label>
+          <textarea [(ngModel)]="form.description" placeholder="Describe your vision in a few sentences..."></textarea>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>Sector</label>
+            <div class="select-wrap">
+              <select [(ngModel)]="form.sector">
+                <option value="" disabled selected>Choose...</option>
+                <option>Fintech</option><option>Healthtech</option><option>Edtech</option>
+                <option>SaaS</option><option>E-commerce</option><option>Logistics</option>
+                <option>Real Estate</option><option>Agritech</option><option>Legaltech</option><option>Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Stage</label>
+            <div class="select-wrap">
+              <select [(ngModel)]="form.stage">
+                <option value="" disabled selected>Choose...</option>
+                <option>Idea</option><option>Prototype</option><option>MVP</option>
+                <option>Growth</option><option>Scale</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>Creation Date</label>
+            <input type="date" [(ngModel)]="form.creationDate" />
+          </div>
+          <div class="field">
+            <label>Client Type</label>
+            <div class="select-wrap">
+              <select [(ngModel)]="form.clientType">
+                <option value="" disabled selected>Choose...</option>
+                <option>B2B</option><option>B2C</option><option>B2B2C</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label style="margin-bottom:10px">Status</label>
+          <div class="pill-group">
+            <div class="pill" [class.sel]="activeStatus === 'active'" (click)="activeStatus = 'active'"><div class="dot" style="background:var(--green)"></div> Active</div>
+            <div class="pill" [class.sel]="activeStatus === 'archived'" (click)="activeStatus = 'archived'"><div class="dot" style="background:var(--muted)"></div> Archived</div>
+            <div class="pill" [class.sel]="activeStatus === 'closed'" (click)="activeStatus = 'closed'"><div class="dot" style="background:var(--red)"></div> Closed</div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn-primary" (click)="goToStep(2)">
+            Next — Team
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- PANEL 2 -->
+      <div class="panel" [class.active]="step === 2 && !showSuccess">
+        <div class="section-title">Team Members</div>
+        <div class="team-badge">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>{{ membersList.length }} member(s)</span>
+        </div>
+        <div id="members-list">
+          <div class="member-card" *ngFor="let m of membersList; let i = index">
+            <div class="member-avatar">{{ m.nom ? m.nom.charAt(0).toUpperCase() : '?' }}</div>
+            <div class="member-fields">
+              <div class="field"><label>First & Last Name</label><input type="text" [(ngModel)]="m.nom" placeholder="Ex: Sara Ben Ali" /></div>
+              <div class="field"><label>Role</label><div class="select-wrap"><select [(ngModel)]="m.role"><option value="" disabled selected>Role...</option><option>CEO / Founder</option><option>CTO</option><option>COO</option><option>Developer</option><option>Designer</option><option>Marketing</option><option>Sales</option><option>Finance</option><option>Other</option></select></div></div>
+              <div class="field"><label>Email</label><input type="email" [(ngModel)]="m.email" placeholder="email@example.com" /></div>
+              <div class="field"><label>Status</label><div class="select-wrap"><select [(ngModel)]="m.statut"><option>Full-time</option><option>Part-time</option><option>Freelance</option><option>Advisor</option></select></div></div>
+            </div>
+            <button class="member-remove" (click)="removeMember(i)">×</button>
+          </div>
+        </div>
+        <button class="btn-add-member" (click)="addMember()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add a member
+        </button>
+        <div class="btn-row">
+          <button class="btn-back" (click)="goToStep(1)">← Back</button>
+          <button class="btn-primary" (click)="goToStep(3)">
+            Next — Finances
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- PANEL 3 -->
+      <div class="panel" [class.active]="step === 3 && !showSuccess">
+        <div class="finance-summary">
+          <div><div class="fin-label">MRR</div><div class="fin-value">{{ fmt(form.mrr || 0) }}</div><div class="fin-sub">Monthly</div></div>
+          <div><div class="fin-label">Initial Budget</div><div class="fin-value">{{ fmt(form.budget || 0) }}</div><div class="fin-sub">Total</div></div>
+          <div><div class="fin-label">Estimated ARR</div><div class="fin-value">{{ fmt((form.mrr || 0) * 12) }}</div><div class="fin-sub">MRR × 12</div></div>
+        </div>
+        <div class="section-title">Revenues & Budget</div>
+        <div class="row2">
+          <div class="field">
+            <label>MRR</label>
+            <div class="prefix-wrap"><span class="pfx">€</span><input type="number" [(ngModel)]="form.mrr" placeholder="0" min="0" /></div>
+          </div>
+          <div class="field">
+            <label>Initial Budget</label>
+            <div class="prefix-wrap"><span class="pfx">€</span><input type="number" [(ngModel)]="form.budget" placeholder="50,000" min="0" /></div>
+          </div>
+        </div>
+        <div class="section-title">Credit & Funding</div>
+        <div class="toggle-row" [class.on]="form.hasCredit" (click)="form.hasCredit = !form.hasCredit">
+          <div><div class="t-title">Do you have a credit or loan?</div><div class="t-sub">Add details of your external funding</div></div>
+          <div class="toggle-switch" [class.on]="form.hasCredit"></div>
+        </div>
+        <div class="credit-fields" [class.show]="form.hasCredit">
+          <div class="row2" *ngIf="form.credit">
+            <div class="field"><label>Credit Amount</label><div class="prefix-wrap"><span class="pfx">€</span><input type="number" [(ngModel)]="form.credit.montant" placeholder="0" min="0" /></div></div>
+            <div class="field"><label>Interest Rate (%)</label><input type="number" [(ngModel)]="form.credit.taux" placeholder="5.5" min="0" max="100" step="0.1" /></div>
+          </div>
+          <div class="row2" *ngIf="form.credit">
+            <div class="field"><label>Duration (months)</label><input type="number" [(ngModel)]="form.credit.duree" placeholder="24" min="1" /></div>
+            <div class="field"><label>Funding Source</label><div class="select-wrap"><select [(ngModel)]="form.credit.source"><option value="" disabled selected>Choose...</option><option>Bank</option><option>Private Investor</option><option>Business Angel</option><option>Public Fund</option><option>Family / Friends</option><option>Other</option></select></div></div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn-back" (click)="goToStep(2)">← Back</button>
+          <button class="btn-primary" (click)="submit()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></svg>
+            Create Startup
+          </button>
+        </div>
+      </div>
+
+      <!-- SUCCESS -->
+      <div class="success-panel" [class.show]="showSuccess">
+        <div class="success-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2>Startup created successfully!</h2>
+        <p>Your project has been launched on Flexbideya. You can now manage your team and track your finances.</p>
+        <button class="btn-primary" style="max-width:240px;margin:0 auto" (click)="resetAndContinue()">
+          ← Create another startup
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

@@ -1,0 +1,114 @@
+<div class="public-container">
+  <header class="public-header">
+    <div class="logo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="3" style="margin-right: 8px;">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+      </svg>
+      FlexBidaya <span class="badge">Member Space</span>
+    </div>
+    
+    <div class="status-info" *ngIf="!isLoading && !error">
+      <span class="pulse"></span> 
+      <span>{{ membreInfo?.nomPrenom || 'Member' }} · {{ membreInfo?.startupNom || 'Startup' }}</span>
+    </div>
+
+    <!-- Live Feedback Notification -->
+    <div class="live-feedback approved" *ngIf="proposalFeedback === 'approved'">
+      ✨ Your proposal has been approved and integrated into the BMC!
+      <button (click)="proposalFeedback = null">×</button>
+    </div>
+    <div class="live-feedback rejected" *ngIf="proposalFeedback === 'rejected'">
+      ❌ Your proposal has been rejected.
+      <button (click)="proposalFeedback = null">×</button>
+    </div>
+  </header>
+
+  <main class="content">
+    <!-- LOADING STATE -->
+    <div *ngIf="isLoading" class="loader-container">
+      <div class="spinner"></div>
+      <p>Loading Business Model Canvas...</p>
+    </div>
+
+    <!-- ERROR STATE -->
+    <div *ngIf="error" class="error-container" style="text-align: center; padding-top: 100px;">
+      <div style="font-size: 4rem; margin-bottom: 20px;">⚠️</div>
+      <h2 style="font-weight: 800; font-size: 2rem;">Oops!</h2>
+      <p style="color: var(--text-muted); margin-bottom: 30px;">{{ error }}</p>
+      <button class="btn-primary" style="max-width: 200px;" (click)="loadBmc()">Try again</button>
+    </div>
+
+    <!-- BMC GRID -->
+    <div *ngIf="!isLoading && !error" class="bmc-grid">
+      <div *ngFor="let block of blocks" 
+           class="bmc-block" 
+           [id]="block.id"
+           (mouseenter)="onBlockHover(block.id)">
+        
+        <div class="block-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="block-icon">{{ block.icon }}</span>
+            <h3 [style.color]="block.textColor">{{ block.title }}</h3>
+          </div>
+          <button class="btn-propose" (click)="openProposalModal(block)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            Suggest
+          </button>
+        </div>
+
+        <div class="notes-container">
+          <!-- VALIDATED NOTES -->
+          <div *ngFor="let note of block.notes" class="note-pill">
+            {{ note }}
+          </div>
+
+          <!-- REAL PROPOSALS FROM DATABASE -->
+          <div *ngFor="let p of getPendingForBlock(block.id)" 
+               class="note-pill" 
+               [ngClass]="{
+                 'note-pending': p.status === 'PENDING',
+                 'note-approved': p.status === 'APPROVED',
+                 'note-rejected': p.status === 'REJECTED'
+               }">
+            <span class="status-badge" [class]="p.status.toLowerCase()">
+              {{ p.status === 'PENDING' ? 'Pending' : (p.status === 'APPROVED' ? 'Approved' : 'Rejected') }}
+            </span>
+            {{ p.newValue }}
+          </div>
+
+          <!-- EMPTY STATE -->
+          <div *ngIf="block.notes.length === 0 && getPendingForBlock(block.id).length === 0" class="empty-state" style="color: var(--text-muted); font-size: 0.8rem; text-align: center; padding: 20px 0; border: 1px dashed #e2e8f0; border-radius: 12px;">
+            No items.
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Proposal Modal -->
+  <div class="modal-overlay" *ngIf="isModalOpen" (click)="isModalOpen = false">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>💡 New Idea</h3>
+        <p>Suggest an improvement for the <strong>{{ currentBlock?.title }}</strong> block</p>
+      </div>
+      <div class="modal-body">
+        <label>Your suggestion</label>
+        <textarea [(ngModel)]="proposalText" 
+                  (input)="onTyping($event)"
+                  placeholder="E.g.: Partnership with Stripe, New B2C target..."></textarea>
+        <div style="margin-top: 15px; display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span style="font-size: 0.8rem; color: #475569;">Your suggestion will appear as "pending" until validated by the entrepreneur.</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="isModalOpen = false">Cancel</button>
+        <button class="btn-primary" [disabled]="!proposalText.trim()" (click)="submitProposal()">
+          <span>Send suggestion ✨</span>
+        </button>
+      </div> 
+
+    </div>
+  </div>
+</div>

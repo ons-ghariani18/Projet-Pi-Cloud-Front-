@@ -1,0 +1,348 @@
+<div class="premium-test-container">
+
+  <!-- 1. LOADING -->
+  <div class="glass-container centered" *ngIf="loading">
+    <div class="premium-spinner"></div>
+    <p>Préparation de votre session d'examen...</p>
+  </div>
+
+  <!-- 2. PAYWALL (Status 402) -->
+  <div class="glass-container centered paywall fade-in" *ngIf="!loading && paiementRequis">
+    <div class="paywall-logo">
+      <img src="assets/logo.png" alt="FlexBidaya" />
+      <span class="paywall-logo-name">FlexBidaya</span>
+    </div>
+    <div class="lock-icon">🔒</div>
+    <h1>Premium Certification Zone</h1>
+    <p class="paywall-desc">
+      To access the final exam, earn your <strong>Expert Badge</strong> and your <strong>Official FlexBidaya Certificate</strong>, certification fees are required.
+    </p>
+    <div class="perks-grid">
+      <div class="perk"><span class="check">✓</span> Verifiable Digital Certificate</div>
+      <div class="perk"><span class="check">✓</span> Expert Badge on your profile</div>
+      <div class="perk"><span class="check">✓</span> Priority mentor correction</div>
+    </div>
+    <div class="price-box">
+      <span class="currency">TND</span>
+      <span class="amount">50.00</span>
+    </div>
+    <button class="btn-premium checkout" (click)="showPaymentModal = true">
+      🔒 Unlock Exam — Secure Payment
+    </button>
+  </div>
+
+  <!-- Payment Modal (Custom, no Stripe) -->
+  <app-payment-modal
+    *ngIf="showPaymentModal && inscriptionId"
+    [inscriptionId]="inscriptionId"
+    [formationTitle]="test?.formation?.titre || 'Exam Access'"
+    [amount]="50"
+    (closed)="showPaymentModal = false"
+    (paymentSuccess)="onPaymentSuccess()">
+  </app-payment-modal>
+
+  <!-- 3. READY TO START -->
+  <div class="glass-container centered ready fade-in" *ngIf="!loading && !paiementRequis && !testDemarre && !soumis">
+    
+    <div class="exam-header-row">
+      <div class="exam-logo-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      </div>
+      <div class="exam-header-text">
+        <h1 class="exam-brand-title">FlexBidaya</h1>
+        <div class="exam-badge">CERTIFICATION EXAM</div>
+      </div>
+    </div>
+
+    <!-- Titre de la formation (optionnel, on peut le cacher si on veut coller 100% à l'image) -->
+    <h2 class="exam-formation-title" *ngIf="test?.formation?.titre">{{test?.formation?.titre}}</h2>
+
+    <div class="test-meta-grid">
+      <div class="meta-item">
+        <div class="meta-icon"><i class="fa-regular fa-clock"></i></div>
+        <span class="meta-label">DURÉE</span>
+        <span class="meta-val">{{test?.dureeMinutes}} <small>min</small></span>
+      </div>
+      <div class="meta-item">
+        <div class="meta-icon"><i class="fa-solid fa-check"></i></div>
+        <span class="meta-label">SEUIL</span>
+        <span class="meta-val">{{test?.scoreSeuil}} <small>pts</small></span>
+      </div>
+      <div class="meta-item">
+        <div class="meta-icon"><i class="fa-regular fa-square-check"></i></div>
+        <span class="meta-label">QUESTIONS</span>
+        <span class="meta-val">{{test?.questions?.length}}</span>
+      </div>
+    </div>
+
+    <div class="exam-rules-box">
+      <div class="rule-item">
+        <i class="fa-solid fa-desktop"></i>
+        <span>Caméra obligatoire — surveillance continue</span>
+      </div>
+      <div class="rule-item">
+        <i class="fa-solid fa-border-all"></i>
+        <span>Plein écran requis — toute sortie = infraction</span>
+      </div>
+      <div class="rule-item">
+        <i class="fa-regular fa-copy"></i>
+        <span>Copier/coller désactivé pendant l'examen</span>
+      </div>
+    </div>
+
+    <div class="warning-box">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span *ngIf="dateArrivee">Une fois démarré, le chrono ne peut pas être arrêté.</span>
+      <span *ngIf="!dateArrivee">Accessible à partir du : <b>{{test?.heureFixeDebut | date:'dd/MM/yyyy à HH:mm'}}</b></span>
+    </div>
+
+    <button class="btn-premium start" (click)="demarrerTest()" [disabled]="!dateArrivee" [style.opacity]="!dateArrivee ? '0.5' : '1'" [style.cursor]="!dateArrivee ? 'not-allowed' : 'pointer'">
+      <span *ngIf="dateArrivee">Démarrer l'examen maintenant</span>
+      <span *ngIf="!dateArrivee">🔒 Examen Verrouillé</span>
+    </button>
+  </div>
+
+  <!-- 4. ACTIVE TEST -->
+  <div class="test-layout fade-in" *ngIf="testDemarre && !soumis">
+    
+    <!-- ANTI-CHEAT NOTIFICATION BANNER (non-blocking, replaces alert()) -->
+    <div *ngIf="notificationVisible"
+      style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999;
+             width: 90%; max-width: 600px; background: #dc2626; color: white;
+             border-radius: 14px; padding: 18px 20px; box-shadow: 0 10px 40px rgba(220,38,38,0.5);
+             display: flex; align-items: flex-start; gap: 14px; animation: slideDown 0.3s ease;">
+      <span style="font-size: 28px; flex-shrink: 0;">⚠️</span>
+      <div style="flex: 1;">
+        <div style="font-weight: 800; font-size: 15px; margin-bottom: 4px;">
+          {{ infractions >= maxInfractions ? '🚨 Examen annulé — 3 infractions atteintes !' : ('AVERTISSEMENT — Infraction ' + infractions + '/' + maxInfractions) }}
+        </div>
+        <div style="font-size: 13px; opacity: 0.9;">{{ notificationMotif }}</div>
+        <div *ngIf="infractions < maxInfractions" style="font-size: 12px; margin-top: 6px; opacity: 0.8;">
+          ⏳ Vous pouvez continuer l'examen. Encore {{ maxInfractions - infractions }} avertissement(s) avant la fermeture automatique.
+        </div>
+        <div *ngIf="infractions >= maxInfractions" style="font-size: 12px; margin-top: 6px; opacity: 0.8;">
+          L'examen sera soumis automatiquement dans 3 secondes...
+        </div>
+      </div>
+      <button *ngIf="infractions < maxInfractions" (click)="fermerNotification()"
+        style="background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-weight: 700; font-size: 13px; flex-shrink: 0;">
+        OK, continuer ✕
+      </button>
+    </div>
+
+
+    <!-- Sidebar Meta -->
+    <aside class="test-sidebar">
+      <div class="glass timer-card">
+        <div class="timer-icon-wrapper">
+          <i class="fa-regular fa-clock"></i>
+        </div>
+        <div class="timer-val" [class.urgent]="tempsRestant < 60">
+          <span class="min">{{ formattedTime.split(':')[0] }}</span><span class="colon">:</span><span class="sec">{{ formattedTime.split(':')[1] }}</span>
+        </div>
+        <div class="timer-label">TEMPS RESTANT</div>
+        
+        <div class="progress-section">
+          <div class="progress-info">
+            <span>Progression</span>
+            <span class="progress-pct" [class.complete]="progression === 100">{{ progression }}%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" [style.width.%]="progression"></div>
+          </div>
+          <div class="progress-sub">{{ answeredCount }} / {{ reponses.length }} répondu(s)</div>
+        </div>
+      </div>
+      
+      <!-- WEBCAM CAMERA PREVIEW + Face Detection Status -->
+      <div class="glass camera-card-clean">
+        <div class="camera-header">
+          <div class="rec-dot"></div>
+          <span class="rec-text">LIVE SURVEILLANCE</span>
+          <span class="hd-text">HD</span>
+        </div>
+        <div class="video-wrapper">
+           <video #videoElement autoplay muted playsinline></video>
+           <div class="rec-badge">REC</div>
+           <canvas #faceCanvas style="display: none;"></canvas>
+        </div>
+        <!-- Statut visage -->
+        <div class="face-status" *ngIf="faceDetectionActive" [class.detected]="faceDetected">
+          <i class="fa-solid" [class.fa-check]="faceDetected" [class.fa-xmark]="!faceDetected"></i>
+          {{ faceDetected ? 'Visage détecté' : 'Visage non visible !' }}
+        </div>
+      </div>
+
+      <!-- Navigation Dummy Block (Optional based on screenshot) -->
+      <div class="glass nav-card">
+        <div class="nav-label">NAVIGATION</div>
+        <div class="nav-grid">
+          <div class="nav-btn" *ngFor="let rep of reponses; let i = index" [class.answered]="rep.reponseFournie">{{ i + 1 }}</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Questions Content -->
+    <main class="test-main">
+        
+        <!-- INFRACTIONS WARNING -->
+        <div class="warning-box glass" *ngIf="infractions > 0" style="background: rgba(220, 38, 38, 0.1); border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 20px; border-radius: 8px;">
+            <strong style="color: #ef4444; font-size: 1.1rem;">⚠️ Avertissement d'Infraction ({{infractions}}/{{maxInfractions}})</strong>
+            <p style="color: #f87171; margin: 5px 0 0; font-size: 0.9rem;">
+                Vous avez enfreint les règles de l'examen (ex: sortie du plein écran ou changement d'onglet). À {{maxInfractions}} infractions, votre examen sera annulé.
+            </p>
+        </div>
+
+        <div class="glass question-card" *ngFor="let rep of reponses; let i = index">
+            <div class="q-header-clean">
+              <div class="q-badges-left">
+                <span class="q-badge-blue">Question {{i+1}}</span>
+                <span class="q-badge-green" *ngIf="rep.questionTest.type === 'QCM'">QCM</span>
+                <span class="q-badge-green" *ngIf="rep.questionTest.type === 'OUVERTE'">Ouverte</span>
+              </div>
+              <div class="q-points-badge">
+                <i class="fa-regular fa-star"></i> {{rep.questionTest.points}} point{{rep.questionTest.points > 1 ? 's' : ''}}
+              </div>
+            </div>
+
+            <div class="q-text-box">
+              {{rep.questionTest.texte}}
+            </div>
+
+            <!-- QCM -->
+            <div class="options-grid-clean" *ngIf="rep.questionTest.type === 'QCM'">
+                <label class="option-label-clean" *ngFor="let opt of rep.questionTest.shuffledOptions" [class.selected]="rep.reponseFournie === opt.id">
+                    <input type="radio" [(ngModel)]="rep.reponseFournie" [value]="opt.id">
+                    <span class="opt-letter-clean">{{opt.id}}</span>
+                    <span class="opt-text-clean">{{opt.text}}</span>
+                    <i class="fa-solid fa-check check-icon" *ngIf="rep.reponseFournie === opt.id"></i>
+                </label>
+            </div>
+
+            <!-- OUVERTE -->
+            <div class="text-answer-clean" *ngIf="rep.questionTest.type === 'OUVERTE'">
+                <textarea [(ngModel)]="rep.reponseFournie" rows="5" placeholder="Saisissez votre réponse..."></textarea>
+            </div>
+        </div>
+
+        <button class="btn-premium submit" (click)="soumettre()">
+            <i class="fa-regular fa-paper-plane"></i> Terminer & envoyer l'examen
+        </button>
+    </main>
+  </div>
+
+  <!-- 5. RESULTS -->
+  <div class="glass-container centered success-screen fade-in" *ngIf="soumis">
+
+    <!-- FRAUDE détectée -->
+    <ng-container *ngIf="score >= 0 && infractions >= maxInfractions">
+      <div class="fraud-result-card">
+        <div class="fraud-icon-ring">
+          <i class="fa-solid fa-ban"></i>
+        </div>
+        <div class="fraud-badge">EXAMEN ANNULÉ</div>
+        <h1 class="fraud-title">Votre examen a été annulé</h1>
+
+        <div class="fraud-details-box">
+          <div class="fraud-detail-item">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>Soumis automatiquement suite à <strong>{{ infractions }} infractions</strong> détectées</span>
+          </div>
+          <div class="fraud-detail-item">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Marqué comme <strong>tentative de fraude</strong> — signalé au mentor</span>
+          </div>
+        </div>
+
+        <div class="fraud-stats-grid">
+          <div class="fraud-stat-box">
+            <div class="fraud-stat-val">{{ infractions }}</div>
+            <div class="fraud-stat-label">INFRACTIONS</div>
+          </div>
+          <div class="fraud-stat-box">
+            <div class="fraud-stat-val">0</div>
+            <div class="fraud-stat-label">POINTS</div>
+          </div>
+          <div class="fraud-stat-box">
+            <div class="fraud-stat-val">F</div>
+            <div class="fraud-stat-label">RÉSULTAT</div>
+          </div>
+        </div>
+
+        <button class="btn-outline-blue" routerLink="/mes-formations">
+          <i class="fa-solid fa-arrow-left"></i> Retour à mon tableau de bord
+        </button>
+      </div>
+    </ng-container>
+
+    <!-- RÉUSSI -->
+    <ng-container *ngIf="reussi && infractions < maxInfractions">
+      <div class="result-icon">🎉</div>
+      <h1 style="color:#4ade80;">Félicitations !</h1>
+      <p style="color:#86efac; margin-bottom: 20px;">
+        Vous avez réussi l'examen de certification avec succès.
+      </p>
+
+      <!-- Score card -->
+      <div class="score-card glass" style="margin-bottom: 24px;">
+        <div class="score-val" style="color:#4ade80;">{{ score }}</div>
+        <div class="score-label">Points obtenus / Seuil requis : {{ test?.scoreSeuil }}</div>
+      </div>
+
+      <!-- Blockchain certificate CTA -->
+      <div class="bc-result-panel" *ngIf="certToken" id="cert-result-section">
+        <div class="bc-result-glow"></div>
+        <div class="bc-result-icon">⛓️</div>
+        <div class="bc-result-content">
+          <div class="bc-result-title">Certificat Blockchain Généré !</div>
+          <div class="bc-result-sub">
+            Votre certification est ancrée sur le réseau <strong>Polygon Amoy</strong> —
+            vérifiable publiquement et infalsifiable.
+          </div>
+          <div class="bc-result-actions">
+            <button class="btn-cert-open" (click)="ouvrirCertificat()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                <path d="M9 12l2 2 4-4"/><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Voir mon Certificat
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cert en cours de génération -->
+      <div class="cert-generating" *ngIf="!certToken">
+        <div class="mini-spinner"></div>
+        ⛓️ Anchoring certificate on Polygon Amoy…
+        <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 6px;">
+          Blockchain transaction in progress — please wait ⟳
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ÉCHOUÉ (pas de fraude) -->
+    <ng-container *ngIf="!reussi && infractions < maxInfractions">
+      <div class="result-icon">📋</div>
+      <h1>Examen Soumis</h1>
+      <p style="color:#94a3b8; margin-bottom: 20px;">
+        Votre copie a été enregistrée avec succès.
+      </p>
+      <div class="score-card glass" style="margin-bottom: 24px;">
+        <div class="score-val" style="color:#f87171;">{{ score }}</div>
+        <div class="score-label">Points obtenus / Seuil requis : {{ test?.scoreSeuil }}</div>
+      </div>
+      <p class="status-msg">
+        Le score n'a pas atteint le seuil de réussite.
+        Si votre examen contient des questions ouvertes,
+        le mentor peut encore vous attribuer des points supplémentaires.
+      </p>
+    </ng-container>
+
+    <button *ngIf="!(score >= 0 && infractions >= maxInfractions)" class="btn-premium secondary" routerLink="/mes-formations" style="margin-top: 24px;">
+      ← Retour à mon tableau de bord
+    </button>
+  </div>
+
+</div>

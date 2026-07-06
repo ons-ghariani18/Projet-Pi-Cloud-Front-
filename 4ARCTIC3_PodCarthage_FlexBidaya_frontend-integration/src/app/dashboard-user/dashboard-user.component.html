@@ -1,0 +1,2501 @@
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text"><i class="fas fa-bolt"></i> FLEXBIDEYA</div>
+    <div class="logo-sub">Participant Space</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <div class="nav-item" [class.active]="activePage === 'overview'" (click)="navigate('overview')">
+      <i class="fas fa-chart-pie"></i> Overview
+    </div>
+
+    <div class="nav-section-label">Discover</div>
+    <div class="nav-item" [class.active]="activePage === 'events'" (click)="navigate('events')">
+      <i class="fas fa-calendar-star"></i> Events
+      <span class="nav-badge green">{{ filteredEvents.length }}</span>
+    </div>
+    <div class="nav-item" [class.active]="activePage === 'hackathons'" (click)="navigate('hackathons')">
+      <i class="fas fa-code"></i> Hackathons
+      <span class="nav-badge">{{ approvedHackathons.length }}</span>
+    </div>
+    <div class="nav-item" routerLink="/client/opportunites" routerLinkActive="active">
+      <i class="fas fa-briefcase"></i> Opportunités
+    </div>
+    <div class="nav-item" routerLink="/mes-candidatures" routerLinkActive="active">
+      <i class="fas fa-file-signature"></i> Mes Candidatures
+    </div>
+
+    <div class="nav-section-label">My Profile</div>
+    <div class="nav-item" [class.active]="activePage === 'cvmatch'" (click)="navigate('cvmatch')">
+      <i class="fas fa-magic"></i> CV Matching
+    </div>
+    <div class="nav-item" [class.active]="activePage === 'domain'" (click)="navigate('domain')">
+      <i class="fas fa-layer-group"></i> Recommended Booths
+    </div>
+
+    <div class="nav-section-label">Resources</div>
+    <div class="nav-item" routerLink="/dashboard" routerLinkActive="active">
+      <i class="fas fa-newspaper"></i> Actualites
+    </div>
+    <div class="nav-item" [class.active]="activePage === 'conseils'" (click)="navigate('conseils')">
+      <i class="fas fa-lightbulb"></i> Tips & Guides
+    </div>
+
+    <div class="nav-section-label">My Hackathon</div>
+    <div class="nav-item" [class.active]="activePage === 'submit'" (click)="navigate('submit')">
+      <i class="fas fa-upload"></i> Submit my work
+      <span class="nav-badge" style="background:#ef4444;" *ngIf="myRegistration && isDeadlineSoon(myRegistration)">!</span>
+    </div>
+
+    <div class="nav-section-label">My War Room</div>
+    <div class="nav-item" 
+         [class.active]="activePage === 'warroom'"
+         (click)="navigateToWarRoom()">
+      <i class="fas fa-rocket"></i> War Room
+      <span class="nav-badge" 
+            style="background:#8b5cf6;" 
+            *ngIf="myWarRoom">
+        Live
+      </span>
+    </div>
+    <div class="nav-item"
+         routerLink="/pitch"
+         routerLinkActive="active">
+      <i class="fas fa-microphone"></i> Pitch Trainer
+    </div>
+
+    <div class="nav-section-label">Account</div>
+
+    <div class="nav-item" (click)="logout()">
+      <i class="fas fa-sign-out-alt"></i> Logout
+    </div>
+  </nav>
+
+  <div class="sidebar-user">
+    <div class="user-avatar">{{ (currentUsername || 'U').charAt(0).toUpperCase() }}</div>
+    <div class="user-info">
+      <div class="user-name">{{ currentUsername }}</div>
+      <div class="user-role">Participant</div>
+    </div>
+    <i class="fas fa-ellipsis-v" style="color:rgba(255,255,255,0.4);font-size:0.8rem;cursor:pointer;"></i>
+  </div>
+</aside>
+<!-- MAIN AREA -->
+<div class="main-area">
+<div class="topbar">
+  <div class="topbar-title">{{ pageTitle }}</div>
+
+  <div class="topbar-search">
+    <i class="fas fa-search"></i>
+    <input type="text" 
+           placeholder="Search events, hackathons…" 
+           [(ngModel)]="searchQuery">
+  </div>
+
+  <div class="topbar-actions">
+    <div class="icon-btn" routerLink="/dashboard" title="Actualites">
+      <i class="fas fa-newspaper"></i>
+    </div>
+
+    <!-- ✅ Widget timer ici, DANS topbar-actions -->
+    <div class="active-timer" [class.inactive]="!(timerService.active$ | async)">
+      <span class="timer-dot"></span>
+      <span class="timer-value">{{ timerService.time$ | async }}</span>
+    </div>
+
+   <div class="icon-btn" (click)="showLogoutConfirm = true" title="Déconnexion">
+  <i class="fas fa-sign-out-alt"></i>
+</div>
+
+    <div class="user-avatar" style="width:34px;height:34px;font-size:0.78rem;cursor:pointer;">
+      {{ (currentUsername || 'U').charAt(0).toUpperCase() }}
+    </div>
+
+  </div>
+</div>
+  <div class="page-content">
+
+    <!-- ═══ OVERVIEW ═══ -->
+    <div class="page" [class.active]="activePage === 'overview'">
+      <div style="margin-bottom:1.5rem;">
+        <h1 style="font-size:1.6rem;font-weight:800;" class="gradient-text">Hello, {{ currentUsername }} 👋</h1>
+        <p style="color:var(--gray-500);font-size:0.9rem;margin-top:0.2rem;">Here is a summary of your activity and upcoming events</p>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background:linear-gradient(135deg,#3b82f6,#1e3a8a);"><i class="fas fa-calendar-check"></i></div>
+          <div class="kpi-number">{{ filteredEvents.length }}</div>
+          <div class="kpi-label">Available events</div>
+          <div class="kpi-trend up"><i class="fas fa-arrow-up"></i> +1 this month</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);"><i class="fas fa-code"></i></div>
+          <div class="kpi-number">{{ approvedHackathons.length }}</div>
+          <div class="kpi-label">Available hackathons</div>
+          <div class="kpi-trend neutral"><i class="fas fa-minus"></i> Stable</div>
+        </div>
+       <div class="kpi-card" style="cursor:pointer;" (click)="navigate('hackathons')">
+  <div class="kpi-icon" style="background:linear-gradient(135deg,#10b981,#059669);"><i class="fas fa-rocket"></i></div>
+  <div class="kpi-number">{{ myRegistrations.length }}</div>
+  <div class="kpi-label">My registered hackathons</div>
+  <div class="kpi-trend up"><i class="fas fa-check-circle"></i> Active registrations</div>
+</div>
+       <div class="kpi-card" style="cursor:pointer;" (click)="navigate('events')">
+  <div class="kpi-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706);"><i class="fas fa-ticket-alt"></i></div>
+  <div class="kpi-number">{{ myEventRegistrations.length }}</div>
+  <div class="kpi-label">My registered events</div>
+  <div class="kpi-trend up"><i class="fas fa-calendar-check"></i> Participations</div>
+</div>
+      </div>
+
+      <div class="two-col" style="margin-bottom:2rem;">
+       <div class="card">
+  <div class="card-title"><i class="fas fa-code"></i> Recent Hackathons</div>
+  <div *ngIf="isLoadingHackathons" style="text-align:center;padding:1.5rem;">
+    <i class="fas fa-spinner fa-spin" style="color:var(--accent-violet);font-size:1.5rem;"></i>
+  </div>
+  <div *ngIf="!isLoadingHackathons">
+    <ng-container *ngIf="overviewHacks.length > 0; else noHacks">
+      <div *ngFor="let h of overviewHacks" class="participation-row" style="cursor:pointer;" (click)="navigate('hackathons')">
+        <div class="p-icon" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);">
+          <i class="fas fa-code"></i>
+        </div>
+        <div class="p-info">
+          <div class="p-name">{{ h.title }}</div>
+          <div class="p-sub">{{ formatDate(h.startDate) }} · {{ h.location }}</div>
+        </div>
+        <span style="font-size:0.72rem;font-weight:700;padding:3px 10px;border-radius:99px;white-space:nowrap;"
+              [style.background]="getTimeStatusBg(getItemTimeStatus(h))"
+              [style.color]="getTimeStatusColor(getItemTimeStatus(h))">
+          <span style="width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px;"
+                [style.background]="getTimeStatusColor(getItemTimeStatus(h))"></span>
+          {{ getTimeStatusLabel(getItemTimeStatus(h)) }}
+        </span>
+      </div>
+    </ng-container>
+    <ng-template #noHacks>
+      <div class="empty-state" style="padding:1rem;">
+        <i class="fas fa-code" style="font-size:1.5rem;"></i>
+        <p>No hackathon available</p>
+      </div>
+    </ng-template>
+  </div>
+</div>
+
+        <div class="card">
+          <div class="card-title"><i class="fas fa-history"></i> Recent Events</div>
+          <div *ngIf="isLoadingEvents" style="text-align:center;padding:1.5rem;">
+            <i class="fas fa-spinner fa-spin" style="color:var(--accent-violet);font-size:1.5rem;"></i>
+          </div>
+          <div *ngIf="!isLoadingEvents">
+            <ng-container *ngIf="overviewEvents.length > 0; else noEvents">
+              <div *ngFor="let ev of overviewEvents" class="participation-row">
+                <div class="p-icon"
+                  [style.background]="'linear-gradient(135deg,' + (typeColors[ev.status]?.[0] || '#1e3a8a') + ',' + (typeColors[ev.status]?.[1] || '#8b5cf6') + ')'">
+                  <i class="fas fa-calendar"></i>
+                </div>
+                <div class="p-info">
+                  <div class="p-name">{{ ev.title }}</div>
+                  <div class="p-sub">{{ formatDate(ev.startDate) }} · {{ ev.location }}</div>
+                </div>
+                <span [ngClass]="statusBadgeClass(ev.status)" class="p-status">
+                  {{ statusBadgeLabel(ev.status) }}
+                </span>
+              </div>
+            </ng-container>
+            <ng-template #noEvents>
+              <div class="empty-state" style="padding:1rem;">
+                <i class="fas fa-calendar-times" style="font-size:1.5rem;"></i>
+                <p>No event available</p>
+              </div>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <div><h2>No event available</h2><p>Join upcoming events</p></div>
+        <button class="btn btn-primary btn-sm" (click)="navigate('events')">
+          See all<i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
+
+      <div *ngIf="isLoadingEvents" style="text-align:center;padding:2rem;">
+        <i class="fas fa-spinner fa-spin" style="color:var(--accent-violet);font-size:2rem;"></i>
+      </div>
+
+      <div class="events-grid" *ngIf="!isLoadingEvents">
+        <ng-container *ngFor="let ev of overviewEvents">
+          <ng-container *ngTemplateOutlet="eventCardTpl; context:{ev:ev}"></ng-container>
+        </ng-container>
+        <div *ngIf="overviewEvents.length === 0" class="empty-state" style="grid-column:1/-1;">
+          <i class="fas fa-calendar-times"></i><p>No event available</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ EVENTS PAGE ═══ -->
+    <div class="page" [class.active]="activePage === 'events'">
+      <div class="section-header">
+        <div><h2>Available events</h2><p>Discover and participate in upcoming events</p></div>
+      </div>
+     <div class="filter-bar">
+  <button class="filter-btn" [class.active]="currentTimeFilter === 'ALL'"
+          (click)="setTimeFilter('ALL')">
+    All
+  </button>
+  <button class="filter-btn" [class.active]="currentTimeFilter === 'EN_COURS'"
+          (click)="setTimeFilter('EN_COURS')"
+          style="border-color:#22c55e;color:#15803d;"
+          [style.background]="currentTimeFilter==='EN_COURS' ? 'rgba(34,197,94,0.08)' : ''">
+    <span style="display:inline-block;width:7px;height:7px;border-radius:50%;
+                 background:#22c55e;margin-right:4px;"></span>
+    Ongoing
+    <span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:99px;
+                 background:rgba(34,197,94,0.15);color:#15803d;margin-left:4px;">
+{{ eventsCountByTime['EN_COURS'] }}
+    </span>
+  </button>
+  <button class="filter-btn" [class.active]="currentTimeFilter === 'PREVU'"
+          (click)="setTimeFilter('PREVU')"
+          style="border-color:#3b82f6;color:#1d4ed8;"
+          [style.background]="currentTimeFilter==='PREVU' ? 'rgba(59,130,246,0.08)' : ''">
+    <span style="display:inline-block;width:7px;height:7px;border-radius:50%;
+                 background:#3b82f6;margin-right:4px;"></span>
+    Upcoming 
+    <span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:99px;
+                 background:rgba(59,130,246,0.15);color:#1d4ed8;margin-left:4px;">
+{{ eventsCountByTime['PREVU'] }}
+    </span>
+  </button>
+  <button class="filter-btn" [class.active]="currentTimeFilter === 'TERMINE'"
+          (click)="setTimeFilter('TERMINE')"
+          style="border-color:#9ca3af;color:#6b7280;"
+          [style.background]="currentTimeFilter==='TERMINE' ? 'rgba(156,163,175,0.08)' : ''">
+    <span style="display:inline-block;width:7px;height:7px;border-radius:50%;
+                 background:#9ca3af;margin-right:4px;"></span>
+    Finished 
+    <span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:99px;
+                 background:rgba(156,163,175,0.12);color:#6b7280;margin-left:4px;">
+{{ eventsCountByTime['TERMINE'] }}
+    </span>
+  </button>
+</div>
+      <div *ngIf="isLoadingEvents" style="text-align:center;padding:3rem;">
+        <i class="fas fa-spinner fa-spin" style="color:var(--accent-violet);font-size:2rem;"></i>
+      </div>
+      <div class="events-grid" *ngIf="!isLoadingEvents">
+        <ng-container *ngFor="let ev of filteredEvents">
+          <ng-container *ngTemplateOutlet="eventCardTpl; context:{ev:ev}"></ng-container>
+        </ng-container>
+        <div *ngIf="filteredEvents.length === 0" class="empty-state" style="grid-column:1/-1;">
+          <i class="fas fa-calendar-times"></i><p>No events found</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ HACKATHONS PAGE ═══ -->
+    <div class="page" [class.active]="activePage === 'hackathons'">
+      <div class="section-header">
+        <div><h2>Available hackathons</h2><p>Form your team and take on the challenge</p></div>
+      </div>
+      <div class="filter-bar">
+  <button class="filter-btn" [class.active]="currentTimeFilter === 'ALL'"
+          (click)="setTimeFilter('ALL')">
+    All
+  </button>
+  <button class="filter-btn" [class.active]="currentTimeFilter === 'EN_COURS'"
+          (click)="setTimeFilter('EN_COURS')"
+          style="border-color:#22c55e;color:#15803d;"
+          [style.background]="currentTimeFilter==='EN_COURS' ? 'rgba(34,197,94,0.08)' : ''">
+    <span style="display:inline-block;width:7px;height:7px;border-radius:50%;
+                 background:#22c55e;margin-right:4px;"></span>
+    Ongoing
+    <span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:99px;
+                 background:rgba(34,197,94,0.15);color:#15803d;margin-left:4px;">
+      {{ hackathonsCountByTime['EN_COURS'] }}
+    </span>
+  </button>
+  <button class="filter-btn" [class.active]="currentTimeFilter === 'PREVU'"
+          (click)="setTimeFilter('PREVU')"
+          style="border-color:#3b82f6;color:#1d4ed8;"
+          [style.background]="currentTimeFilter==='PREVU' ? 'rgba(59,130,246,0.08)' : ''">
+    <span style="display:inline-block;width:7px;height:7px;border-radius:50%;
+                 background:#3b82f6;margin-right:4px;"></span>
+    Upcoming 
+    <span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:99px;
+                 background:rgba(59,130,246,0.15);color:#1d4ed8;margin-left:4px;">
+      {{ hackathonsCountByTime['PREVU'] }}
+    </span>
+  </button>
+  <button class="filter-btn" [class.active]="currentTimeFilter === 'TERMINE'"
+          (click)="setTimeFilter('TERMINE')"
+          style="border-color:#9ca3af;color:#6b7280;"
+          [style.background]="currentTimeFilter==='TERMINE' ? 'rgba(156,163,175,0.08)' : ''">
+    <span style="display:inline-block;width:7px;height:7px;border-radius:50%;
+                 background:#9ca3af;margin-right:4px;"></span>
+    Finished
+    <span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:99px;
+                 background:rgba(156,163,175,0.12);color:#6b7280;margin-left:4px;">
+      {{ hackathonsCountByTime['TERMINE'] }}
+    </span>
+  </button>
+</div>
+      <div *ngIf="isLoadingHackathons" style="text-align:center;padding:3rem;">
+        <i class="fas fa-spinner fa-spin" style="color:var(--accent-violet);font-size:2rem;"></i>
+      </div>
+      <div class="events-grid" *ngIf="!isLoadingHackathons">
+        <div *ngFor="let h of filteredHackathons" class="event-card">
+       <div class="event-cover"
+  [style.background]="h.imageBase64 ? 'none' : 'linear-gradient(135deg,#1e3a8a,#8b5cf6)'"
+  [style.padding]="h.imageBase64 ? '0' : null"
+  style="position:relative;overflow:hidden;">
+
+  <!-- Image si disponible -->
+  <img *ngIf="h.imageBase64"
+       [src]="'data:image/jpeg;base64,' + h.imageBase64"
+       alt="{{ h.title }}"
+       style="width:100%;height:100%;object-fit:cover;display:block;" />
+
+  <!-- Fallback icône -->
+  <i *ngIf="!h.imageBase64" class="fas fa-code event-cover-icon"></i>
+
+  <!-- Overlay dégradé -->
+  <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%);pointer-events:none;"></div>
+
+  <div class="event-cover-badge"><span class="badge badge-hack">Hackathon</span></div>
+  <div class="event-cover-date"><i class="fas fa-calendar"></i> {{ formatDate(h.startDate) }}</div>
+</div>
+          <div class="event-body">
+            <div class="event-title">{{ h.title }}</div>
+            <div class="event-meta">
+              <span><i class="fas fa-map-marker-alt"></i>{{ h.location }}</span>
+              <span><i class="fas fa-lightbulb"></i>{{ h.domain }}</span>
+              <span><i class="fas fa-calendar-alt"></i>{{ formatDate(h.startDate) }} → {{ formatDate(h.endDate) }}</span>
+            </div>
+            <div class="event-stats">
+              <div class="event-stat"><div class="val">{{ formatDate(h.startDate) }}</div><div class="lbl">Start</div></div>
+              <div class="event-stat"><div class="val">{{ formatDate(h.endDate) }}</div><div class="lbl">End</div></div>
+              <div class="event-stat"><div class="val">{{ h.domain }}</div><div class="lbl">Domain</div></div>
+            </div>
+<div class="event-actions" style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+  <!-- Bouton Inscrire mon équipe (vert) -->
+  <button class="btn btn-sm" style="flex: 1; background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none; cursor: pointer; padding: 0.75rem 0.75rem; border-radius: 8px; font-weight: 600;"
+          (click)="openHackModal(h.id!)"
+          [disabled]="getItemTimeStatus(h) === 'TERMINE'"
+          [style.opacity]="getItemTimeStatus(h) === 'TERMINE' ? '0.4' : '1'"
+          [style.cursor]="getItemTimeStatus(h) === 'TERMINE' ? 'not-allowed' : 'pointer'">
+    <i class="fas fa-rocket"></i> Register my team
+  </button>
+
+  <!-- Bouton Donner mon avis (violet) -->
+  <button class="btn btn-sm" style="flex: 1; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; border: none; cursor: pointer; padding: 0.75rem 0.75rem; border-radius: 8px; font-weight: 600;"
+          (click)="openFeedbackModal(h.id!, 'HACKATHON')"
+          [style.cursor]="getItemTimeStatus(h) !== 'TERMINE' ? 'not-allowed' : 'pointer'">
+    <i class="fas fa-poll"></i> Give my feedback
+  </button>
+</div>
+          </div>
+        </div>
+        <div *ngIf="filteredHackathons.length === 0" class="empty-state" style="grid-column:1/-1;">
+          <i class="fas fa-code"></i><p>No  hackathon found</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ STANDS PAGE ═══ -->
+    <div class="page" [class.active]="activePage === 'stands'">
+      <div class="section-header">
+        <div><h2>Recommended Stands</h2><p>Selected based on your profile and skills</p></div>
+      </div>
+      <div *ngIf="isLoadingStands" style="text-align:center;padding:3rem;">
+        <i class="fas fa-spinner fa-spin" style="color:var(--accent-violet);font-size:2rem;"></i>
+      </div>
+      <div *ngIf="!isLoadingStands">
+        <div *ngFor="let event of eventsWithStands" style="margin-bottom:2rem;" [attr.data-eid]="event.id">
+          <div class="section-header" style="margin-bottom:0.85rem;">
+            <div>
+              <h2>{{ event.title }}</h2>
+              <p>{{ formatDate(event.startDate) }} · {{ event.location }}</p>
+            </div>
+          </div>
+          <div *ngFor="let s of getStandsByEvent(event.id!)" class="stand-item">
+            <div class="stand-icon"><i class="fas" [ngClass]="catIcons[s.domain] || 'fa-store'"></i></div>
+            <div class="stand-info">
+              <div class="stand-name">{{ s.startupName }}</div>
+              <div style="font-size:0.75rem;color:var(--gray-500);margin-top:0.1rem;">{{ s.description }}</div>
+              <div class="stand-sub" style="margin-top:0.3rem;">
+                <span><i class="fas fa-tag"></i>{{ s.domain }}</span>
+                <span><i class="fas fa-code"></i>{{ s.requiredSkills }}</span>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <div class="match-score" [class.gold]="getMatchScore(s.id!) >= 90">
+                {{ getMatchScore(s.id!) > 0 ? getMatchScore(s.id!) + '%' : '—' }}
+              </div>
+              <span *ngIf="getMatchScore(s.id!) > 0"
+                    style="font-size:0.62rem;font-weight:600;border-radius:3px;padding:1px 6px;"
+                    [style.color]="levelColor(getLevel(getMatchScore(s.id!)))"
+                    [style.background]="levelBg(getLevel(getMatchScore(s.id!)))">
+                {{ getLevel(getMatchScore(s.id!)) }}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="stands.length === 0" class="empty-state">
+          <i class="fas fa-store"></i><p>No booths  available</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ CV MATCH PAGE ═══ -->
+<!-- ═══ CV MATCH PAGE ═══ -->
+<div class="page" [class.active]="activePage === 'cvmatch'">
+
+  <!-- ── Upload CV ── -->
+  <div class="card" style="margin-bottom:1.2rem;">
+    <div class="card-title"><i class="fas fa-file-pdf"></i> Your CV</div>
+    <div class="upload-zone" [class.has-file]="cvFile" (click)="pickFileCvPage()">
+      <i class="fas fa-3x"
+         [class.fa-file-pdf]="cvFile"
+         [class.fa-cloud-upload-alt]="!cvFile"
+         style="margin-bottom:0.5rem;"></i>
+      <p style="margin:0 0 0.25rem;">
+        {{ cvFile ? cvFile.name + ' — Prêt ✓' : 'Cliquez pour charger votre CV' }}
+      </p>
+      <small style="color:var(--gray-500);">	PDF format only</small>
+    </div>
+  </div>
+
+  <!-- ── Bouton analyser ── -->
+  <div style="text-align:center;margin-bottom:1.5rem;">
+    <button class="btn btn-primary"
+            style="padding:0.75rem 2.5rem;font-size:1rem;"
+            (click)="runCVAnalysis()"
+            [disabled]="cvAnalyzing || !cvFile">
+      <ng-container *ngIf="!cvAnalyzing">
+        <i class="fas fa-brain" style="margin-right:0.5rem;"></i>Analyze my CV
+      </ng-container>
+      <ng-container *ngIf="cvAnalyzing">
+        <i class="fas fa-spinner fa-spin" style="margin-right:0.5rem;"></i>	Analysis in progress…
+      </ng-container>
+    </button>
+  </div>
+
+  <!-- ── Résultats ── -->
+  <div *ngIf="matchResult" style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;align-items:start;">
+
+    <!-- COLONNE GAUCHE : Score global -->
+    <div class="card">
+      <div class="card-title"><i class="fas fa-chart-bar"></i> Global score</div>
+      <div style="padding:0.5rem 0;">
+
+        <!-- Score principal -->
+        <div style="text-align:center;margin-bottom:1.25rem;">
+          <div style="font-size:2.5rem;font-weight:800;"
+               [style.color]="levelColor(matchResult.level)">
+            {{ (matchResult.finalScore * 100).toFixed(0) }}%
+          </div>
+          <span style="font-size:0.85rem;font-weight:700;border-radius:6px;padding:4px 14px;display:inline-block;"
+                [style.color]="levelColor(matchResult.level)"
+                [style.background]="levelBg(matchResult.level)">
+            {{ matchResult.level }}
+          </span>
+        </div>
+
+        <!-- Barres sémantique + mots-clés -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;">
+          <div>
+            <div style="font-size:0.75rem;color:var(--gray-500);margin-bottom:0.4rem;">Semantic similarity</div>
+            <div style="height:8px;background:var(--gray-200);border-radius:4px;overflow:hidden;">
+              <div style="height:100%;background:#3b82f6;border-radius:4px;"
+                   [style.width.%]="matchResult.semanticScore * 100"></div>
+            </div>
+            <div style="font-size:0.78rem;margin-top:0.3rem;color:var(--gray-600);">
+              {{ (matchResult.semanticScore * 100).toFixed(0) }}%
+            </div>
+          </div>
+          <div>
+            <div style="font-size:0.75rem;color:var(--gray-500);margin-bottom:0.4rem;">Keywords</div>
+            <div style="height:8px;background:var(--gray-200);border-radius:4px;overflow:hidden;">
+              <div style="height:100%;background:#8b5cf6;border-radius:4px;"
+                   [style.width.%]="matchResult.keywordScore * 100"></div>
+            </div>
+            <div style="font-size:0.78rem;margin-top:0.3rem;color:var(--gray-600);">
+              {{ (matchResult.keywordScore * 100).toFixed(0) }}%
+            </div>
+          </div>
+        </div>
+
+        <!-- Skills détectées -->
+        <div *ngIf="matchResult.cvSkillsExtracted">
+          <div style="font-size:0.75rem;font-weight:600;color:var(--gray-500);margin-bottom:0.5rem;">
+            <i class="fas fa-tags"></i> Skills detected in your CV:
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:0.35rem;">
+            <span *ngFor="let sk of matchResult.cvSkillsExtracted.split(',')"
+                  style="font-size:0.72rem;background:rgba(59,130,246,0.1);color:#1d4ed8;
+                         border-radius:4px;padding:2px 8px;border:1px solid rgba(59,130,246,0.2);">
+              {{ sk.trim() }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLONNE DROITE : Top 3 Stands recommandés -->
+    <div class="card">
+      <div class="card-title">
+        <i class="fas fa-trophy" style="color:#f59e0b;"></i>
+        Top 3 recommended booths 
+        <span style="font-size:0.72rem;color:var(--gray-500);font-weight:400;margin-left:0.4rem;">
+          according to your CV
+        </span>
+      </div>
+
+      <div *ngIf="top3StandsFromMatch.length === 0"
+           style="text-align:center;padding:2rem;color:var(--gray-400);">
+        <i class="fas fa-store-slash fa-2x"></i>
+        <p style="margin-top:0.75rem;font-size:0.85rem;">
+          No booth found — please check that booths are available.
+        </p>
+      </div>
+
+      <div *ngFor="let s of top3StandsFromMatch; let i = index"
+           style="border:1px solid var(--gray-200);border-radius:10px;padding:0.85rem 1rem;
+                  margin-bottom:0.65rem;position:relative;overflow:hidden;">
+
+        <!-- Barre de couleur gauche -->
+        <div style="position:absolute;top:0;left:0;width:3px;height:100%;"
+             [style.background]="levelColor(s.level)"></div>
+
+        <!-- Ligne principale : nom + score -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-left:0.6rem;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              {{ i + 1 }}. {{ s.startupName }}
+            </div>
+
+            <!-- Événement auquel appartient le stand -->
+            <div style="font-size:0.74rem;color:var(--gray-500);margin-top:3px;display:flex;align-items:center;gap:4px;">
+              <i class="fas fa-calendar-alt" style="color:#3b82f6;font-size:0.65rem;"></i>
+              <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                {{ s.event?.title || '—' }}
+              </span>
+            </div>
+
+            <!-- Domaine -->
+            <div style="font-size:0.72rem;color:var(--gray-400);margin-top:2px;">
+              <i class="fas fa-tag" style="font-size:0.65rem;"></i>
+              {{ s.domain }}
+            </div>
+          </div>
+
+          <!-- Score -->
+          <div style="text-align:right;flex-shrink:0;margin-left:0.5rem;">
+            <div style="font-size:1.4rem;font-weight:800;"
+                 [style.color]="levelColor(s.level)">
+              {{ s.matchScore }}%
+            </div>
+            <span style="font-size:0.68rem;font-weight:700;border-radius:4px;padding:2px 7px;display:inline-block;"
+                  [style.color]="levelColor(s.level)"
+                  [style.background]="levelBg(s.level)">
+              {{ s.level }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Barre de progression -->
+        <div style="margin:0.6rem 0 0.5rem 0.6rem;">
+          <div style="height:5px;background:var(--gray-200);border-radius:3px;overflow:hidden;">
+            <div style="height:100%;border-radius:3px;transition:width 0.6s ease;"
+                 [style.width.%]="s.matchScore"
+                 [style.background]="levelColor(s.level)">
+            </div>
+          </div>
+        </div>
+
+        <!-- Skills matchées / manquantes -->
+        <div *ngIf="s.requiredSkills" style="margin-left:0.6rem;">
+          <div style="font-size:0.68rem;color:var(--gray-400);margin-bottom:0.3rem;">
+            Required skills:
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:0.25rem;">
+            <span *ngFor="let sk of s.requiredSkills.split(',')"
+                  style="font-size:0.66rem;border-radius:3px;padding:1px 6px;font-weight:600;"
+                  [style.background]="isSkillMatched(sk.trim(), matchResult!.cvSkillsExtracted)
+                                        ? 'rgba(16,185,129,0.12)' : 'var(--gray-100)'"
+                  [style.color]="isSkillMatched(sk.trim(), matchResult!.cvSkillsExtracted)
+                                   ? '#059669' : 'var(--gray-500)'">
+              <i class="fas"
+                 [class.fa-check]="isSkillMatched(sk.trim(), matchResult!.cvSkillsExtracted)"
+                 [class.fa-times]="!isSkillMatched(sk.trim(), matchResult!.cvSkillsExtracted)"
+                 style="font-size:0.58rem;margin-right:2px;"></i>{{ sk.trim() }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lien vers page stands complète -->
+      <div *ngIf="top3StandsFromMatch.length > 0"
+           style="text-align:center;margin-top:0.75rem;">
+        <button class="btn btn-secondary btn-sm" (click)="navigate('stands')">
+          <i class="fas fa-store"></i> View all booths
+        </button>
+      </div>
+    </div>
+
+  </div><!-- fin grid résultats -->
+
+  <!-- État vide (avant analyse) -->
+  <div *ngIf="!matchResult && !cvAnalyzing"
+       style="text-align:center;padding:3rem 2rem;color:var(--gray-400);">
+    <i class="fas fa-magic fa-3x" style="margin-bottom:1rem;opacity:0.4;"></i>
+    <p style="font-size:0.9rem;">Upload your CV and start the analysis to see your recommended booths</p>
+  </div>
+
+</div>
+<!-- ═══ DOMAIN RECOMMENDATION PAGE ═══ -->
+<div class="page" [class.active]="activePage === 'domain'">
+
+  <!-- ── Hero card upload ── -->
+  <div class="domain-hero">
+    <div class="domain-hero-title">
+      <i class="fas fa-layer-group"></i>
+      Recommendations by domain
+    </div>
+    <div class="domain-hero-sub">
+      AI analyzes your CV, detects your business domain and recommends the most relevant booths
+    </div>
+
+    <div class="domain-upload-zone"
+         [class.has-file]="cvDomainFile"
+         (click)="pickFileDomain()">
+      <i class="fas"
+         [class.fa-file-pdf]="cvDomainFile"
+         [class.fa-cloud-upload-alt]="!cvDomainFile"></i>
+      <p>
+        <strong *ngIf="!cvDomainFile">Click to upload your CV</strong>
+        <strong *ngIf="cvDomainFile">{{ cvDomainFile.name }} — Uploaded  ✓</strong>
+      </p>
+      <small>PDF format only</small>
+    </div>
+
+    <button class="btn-domain"
+            (click)="runDomainDetection()"
+            [disabled]="cvDomainAnalyzing || !cvDomainFile">
+      <ng-container *ngIf="!cvDomainAnalyzing">
+        <i class="fas fa-search"></i> Detect my domain
+      </ng-container>
+      <ng-container *ngIf="cvDomainAnalyzing">
+        <i class="fas fa-spinner fa-spin"></i> 	Analysis in progress…
+      </ng-container>
+    </button>
+  </div>
+
+  <!-- ── Loader ── -->
+  <div class="domain-loader" *ngIf="cvDomainAnalyzing">
+    <i class="fas fa-brain domain-loader-icon"></i>
+    <div class="domain-loader-title">Extracting skills…</div>
+    <div class="domain-loader-sub">
+Groq analyzes your CV · Business domain detection    </div>
+    <div class="domain-spinner"></div>
+  </div>
+
+  <!-- ── Résultats ── -->
+  <ng-container *ngIf="cvDomainLoaded && !cvDomainAnalyzing">
+
+    <!-- Card domaine détecté -->
+    <div class="domain-detected-card">
+      <div class="card-title">
+        <i class="fas fa-crosshairs"></i> 	Detected domain
+      </div>
+
+      <div class="domain-detected-inner"
+           [style.background]="getDomainBg(detectedDomain!)">
+
+        <div class="domain-icon-big"
+             [style.background]="getDomainColor(detectedDomain!)">
+          <i class="fas" [ngClass]="getDomainIcon(detectedDomain!)"></i>
+        </div>
+
+        <div style="flex:1;min-width:0;">
+          <div class="domain-detected-name"
+               [style.color]="getDomainColor(detectedDomain!)">
+            {{ detectedDomain }}
+          </div>
+          <div class="domain-detected-meta">
+            {{ domainStands.length }} matching booth(s)
+            &nbsp;·&nbsp; Compatibility :
+            <strong [style.color]="getDomainColor(detectedDomain!)">
+              {{ domainScorePercent }}%
+            </strong>
+          </div>
+          <div class="domain-score-bar-wrap">
+            <div class="domain-score-bar-fill"
+                 [style.width.%]="domainScorePercent"
+                 [style.background]="getDomainColor(detectedDomain!)">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skills extraites -->
+      <div class="domain-skills-section" *ngIf="detectedDomainSkills.length > 0">
+        <div class="domain-skills-label">
+          <i class="fas fa-tags"></i>
+Skills extracted from your CV
+        </div>
+        <div class="domain-skills-list">
+          <span *ngFor="let sk of detectedDomainSkills"
+                class="domain-skill-tag"
+                [style.background]="getDomainBg(detectedDomain!)"
+                [style.color]="getDomainColor(detectedDomain!)"
+                [style.border-color]="getDomainColor(detectedDomain!) + '55'">
+            {{ sk }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section header stands -->
+    <div class="section-header">
+      <div>
+        <h2>
+          <i class="fas" style="font-size:0.95rem;margin-right:0.4rem;"
+             [ngClass]="getDomainIcon(detectedDomain!)"
+             [style.color]="getDomainColor(detectedDomain!)"></i>
+          	booth(s) — {{ detectedDomain }}
+        </h2>
+        <p>Companies recruiting in your field</p>
+      </div>
+      <span class="badge badge-open" *ngIf="domainStands.length > 0">
+        {{ domainStands.length }} booth(s)
+      </span>
+    </div>
+
+    <!-- Liste des stands -->
+    <div *ngIf="domainStands.length > 0">
+      <div *ngFor="let s of domainStands" class="domain-stand-item">
+
+        <!-- Barre colorée gauche -->
+        <div class="domain-stand-left-bar"
+             [style.background]="getDomainColor(detectedDomain!)"></div>
+
+        <!-- Icône stand -->
+        <div class="domain-stand-icon"
+             [style.background]="getDomainColor(detectedDomain!)">
+          <i class="fas" [ngClass]="catIcons[s.domain] || 'fa-store'"></i>
+        </div>
+
+        <!-- Infos stand -->
+        <div class="domain-stand-info">
+          <div class="domain-stand-name">{{ s.startupName }}</div>
+
+          <div class="domain-stand-event">
+            <i class="fas fa-calendar-alt"
+               style="font-size:0.65rem;"
+               [style.color]="getDomainColor(detectedDomain!)"></i>
+            {{ s.event?.title || '—' }}
+            <span style="color:var(--gray-300);">·</span>
+            <i class="fas fa-tag" style="font-size:0.62rem;"></i>
+            {{ s.domain }}
+          </div>
+
+          <!-- Skills avec matching -->
+          <div class="domain-stand-skills">
+            <span *ngFor="let sk of (s.requiredSkills || '').split(',')"
+                  [class.domain-skill-matched]="isSkillMatched(sk.trim(), detectedDomainSkills.join(','))"
+                  [class.domain-skill-missing]="!isSkillMatched(sk.trim(), detectedDomainSkills.join(','))">
+              <i class="fas"
+                 [class.fa-check]="isSkillMatched(sk.trim(), detectedDomainSkills.join(','))"
+                 [class.fa-times]="!isSkillMatched(sk.trim(), detectedDomainSkills.join(','))"
+                 style="font-size:0.58rem;margin-right:2px;"></i>
+              {{ sk.trim() }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Score individuel -->
+        <div class="domain-stand-score">
+          <div class="domain-stand-score-num"
+               [style.color]="levelColor(getLevel(getIndividualStandScore(s)))">
+            {{ getIndividualStandScore(s) }}%
+          </div>
+          <span class="domain-stand-score-badge"
+                [style.color]="levelColor(getLevel(getIndividualStandScore(s)))"
+                [style.background]="levelBg(getLevel(getIndividualStandScore(s)))">
+            {{ getLevel(getIndividualStandScore(s)) }}
+          </span>
+          <div class="domain-stand-score-bar">
+            <div class="domain-stand-score-bar-fill"
+                 [style.width.%]="getIndividualStandScore(s)"
+                 [style.background]="levelColor(getLevel(getIndividualStandScore(s)))">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aucun stand -->
+    <div class="domain-empty" *ngIf="domainStands.length === 0">
+      <i class="fas fa-store-slash"></i>
+      <p>
+  No stands available for the domain
+        <strong [style.color]="getDomainColor(detectedDomain!)">
+          {{ detectedDomain }}
+        </strong>
+      </p>
+      <button class="btn btn-secondary btn-sm" (click)="navigate('stands')">
+        <i class="fas fa-store"></i> View all booth(s)
+      </button>
+    </div>
+
+  </ng-container>
+
+  <!-- État initial (avant upload) -->
+  <div class="domain-initial"
+       *ngIf="!cvDomainLoaded && !cvDomainAnalyzing">
+    <i class="fas fa-layer-group"></i>
+    <p>
+ Upload your CV to automatically detect your professional field
+  and discover the stands that match your profile.
+    </p>
+  </div>
+
+</div>
+<!-- ═══ FIN DOMAIN PAGE ═══ -->
+
+  <!-- ═══ CONSEILS PAGE ═══ -->
+<div class="page" [class.active]="activePage === 'conseils'">
+  <div class="section-header">
+    <div>
+      <h2>Tips & Guides</h2>
+      <p>Maximize your impact during events and fairs</p>
+    </div>
+  </div>
+
+  <!-- Filtre par catégorie -->
+  <div class="filter-bar">
+    <button class="filter-btn" [class.active]="conseilCatFilter === 'ALL'"
+            (click)="conseilCatFilter = 'ALL'">All</button>
+    <button class="filter-btn" *ngFor="let cat of CONSEIL_CATEGORIES"
+            [class.active]="conseilCatFilter === cat"
+            (click)="conseilCatFilter = cat">
+      <i class="fas" [ngClass]="getConseilUi(cat).icon"></i> {{ cat }}
+    </button>
+  </div>
+
+  <!-- Grille des conseils -->
+  <div class="conseil-grid" *ngIf="!isLoadingConseils; else loader">
+    <div *ngFor="let c of filteredConseils" class="conseil-card">
+      <div class="conseil-header">
+        <div class="conseil-icon-wrap"
+             [style.background]="getConseilUi(c.category).bg"
+             [style.color]="getConseilUi(c.category).color">
+          <i class="fas glowing" [ngClass]="getConseilUi(c.category).icon"></i>
+        </div>
+        <div>
+          <div class="conseil-title">{{ c.title }}</div>
+          <div class="conseil-sub">{{ getConseilUi(c.category).sub }}</div>
+        </div>
+      </div>
+      <div class="conseil-body">
+        <ul class="conseil-tips">
+          <li *ngFor="let tip of getConseilTips(c.content)">
+            <div class="tip-bullet" [style.background]="getConseilUi(c.category).color"></div>
+            {{ tip }}
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div *ngIf="filteredConseils.length === 0" class="empty-state" style="grid-column:1/-1;">
+      <i class="fas fa-lightbulb glowing"></i><p>No tip in this category</p>
+    </div>
+  </div>
+
+  <ng-template #loader>
+    <div style="text-align:center;padding:3rem;">
+      <i class="fas fa-spinner fa-spin" style="color:var(--accent-violet);font-size:2rem;"></i>
+    </div>
+  </ng-template>
+</div>
+<!-- ══════════════════════════════════════════
+     MODAL — Feedback Participant
+══════════════════════════════════════════ -->
+<div class="modal-overlay" [class.open]="showFeedbackModal"
+     (click)="showFeedbackModal=false">
+  <div class="modal" style="max-width:580px;"
+       (click)="$event.stopPropagation()">
+
+    <div class="modal-header"
+         style="background:linear-gradient(135deg,#6d28d9,#8b5cf6);
+                border-radius:12px 12px 0 0;">
+      <h3 style="color:#fff;">
+        <i class="fas fa-poll" style="margin-right:0.5rem;"></i>
+        {{ feedbackFormData?.title || 'Formulaire de feedback' }}
+      </h3>
+      <button class="modal-close"
+              style="color:rgba(255,255,255,0.7);"
+              (click)="showFeedbackModal=false">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto;">
+
+      <!-- Succès -->
+      <div *ngIf="feedbackDone"
+           style="text-align:center;padding:2.5rem;">
+        <div style="font-size:4rem;margin-bottom:1rem;">🎉</div>
+        <div style="font-size:1.1rem;font-weight:700;color:#059669;
+                    margin-bottom:0.5rem;">
+          Thank you for your feedback!
+        </div>
+        <p style="font-size:0.88rem;color:var(--gray-500);">
+          Your opinion has been saved.
+        </p>
+      </div>
+
+      <!-- Formulaire -->
+      <ng-container *ngIf="!feedbackDone && feedbackFormData">
+
+        <p *ngIf="feedbackFormData.description"
+           style="font-size:0.88rem;color:var(--gray-500);
+                  margin-bottom:1.25rem;">
+          {{ feedbackFormData.description }}
+        </p>
+
+        <!-- Questions -->
+        <div *ngFor="let q of feedbackFormData.questions; let i = index"
+             style="margin-bottom:1.25rem;padding:1rem;
+                    background:var(--gray-50);border-radius:12px;
+                    border:1px solid var(--gray-200);">
+
+          <div style="font-weight:700;font-size:0.88rem;
+                      color:var(--gray-800);margin-bottom:0.75rem;">
+            {{ i + 1 }}. {{ q.label }}
+            <span *ngIf="q.required"
+                  style="color:#ef4444;margin-left:3px;">*</span>
+          </div>
+
+          <!-- LINEAR -->
+          <div *ngIf="q.type === 'LINEAR'"
+               style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <button *ngFor="let n of getScaleArray(q.scaleMin||1, q.scaleMax||5)"
+                    (click)="setAnswer(q.id!, n.toString())"
+                    style="width:42px;height:42px;border-radius:8px;
+                           font-weight:700;font-size:0.9rem;cursor:pointer;
+                           border:2px solid;transition:all 0.15s;"
+                    [style.background]="feedbackAnswers[q.id!] == n.toString()
+                      ? '#3b82f6' : 'transparent'"
+                    [style.color]="feedbackAnswers[q.id!] == n.toString()
+                      ? '#fff' : '#3b82f6'"
+                    [style.border-color]="'#3b82f6'">
+              {{ n }}
+            </button>
+          </div>
+
+          <!-- TEXT -->
+          <textarea *ngIf="q.type === 'TEXT'"
+                    class="form-control"
+                    rows="3"
+                    placeholder="Your answer…"
+                    [value]="feedbackAnswers[q.id!] || ''"
+                    (input)="setAnswer(q.id!, $any($event.target).value)">
+          </textarea>
+
+          <!-- RADIO -->
+          <div *ngIf="q.type === 'RADIO'"
+               style="display:flex;flex-direction:column;gap:0.4rem;">
+            <label *ngFor="let opt of getOptionsArray(q.options)"
+                   style="display:flex;align-items:center;gap:0.5rem;
+                          cursor:pointer;font-size:0.88rem;
+                          padding:0.5rem 0.75rem;border-radius:8px;
+                          border:1px solid;"
+                   [style.background]="feedbackAnswers[q.id!] === opt
+                     ? 'rgba(16,185,129,0.1)' : 'transparent'"
+                   [style.border-color]="feedbackAnswers[q.id!] === opt
+                     ? '#10b981' : 'var(--gray-200)'">
+              <input type="radio"
+                     [name]="'q_' + q.id"
+                     [value]="opt"
+                     [checked]="feedbackAnswers[q.id!] === opt"
+                     (change)="setAnswer(q.id!, opt)"
+                     style="accent-color:#10b981;">
+              {{ opt }}
+            </label>
+          </div>
+
+          <!-- CHECKBOX -->
+          <div *ngIf="q.type === 'CHECKBOX'"
+               style="display:flex;flex-direction:column;gap:0.4rem;">
+            <label *ngFor="let opt of getOptionsArray(q.options)"
+                   style="display:flex;align-items:center;gap:0.5rem;
+                          cursor:pointer;font-size:0.88rem;
+                          padding:0.5rem 0.75rem;border-radius:8px;
+                          border:1px solid;"
+                   [style.background]="isCheckboxChecked(q.id!, opt)
+                     ? 'rgba(245,158,11,0.1)' : 'transparent'"
+                   [style.border-color]="isCheckboxChecked(q.id!, opt)
+                     ? '#f59e0b' : 'var(--gray-200)'">
+              <input type="checkbox"
+                     [checked]="isCheckboxChecked(q.id!, opt)"
+                     (change)="toggleCheckbox(q.id!, opt)"
+                     style="accent-color:#f59e0b;">
+              {{ opt }}
+            </label>
+          </div>
+
+        </div>
+
+        <!-- Erreur -->
+        <div *ngIf="feedbackError"
+             style="background:rgba(239,68,68,0.1);
+                    border:1px solid rgba(239,68,68,0.3);
+                    border-radius:8px;padding:0.6rem 1rem;
+                    font-size:0.82rem;color:#dc2626;margin-top:0.5rem;">
+          <i class="fas fa-exclamation-circle"></i>
+          {{ feedbackError }}
+        </div>
+
+      </ng-container>
+
+    </div>
+
+    <div class="modal-footer" *ngIf="!feedbackDone">
+      <button class="btn btn-secondary"
+              (click)="showFeedbackModal=false">
+        Cancel
+      </button>
+      <button class="btn btn-primary"
+              style="background:linear-gradient(135deg,#6d28d9,#8b5cf6);"
+              [disabled]="feedbackSubmitting"
+             (click)="submitFeedback(currentUserEmail, currentUsername)">
+        <i class="fas fa-paper-plane"></i>
+        {{ feedbackSubmitting ? 'Envoi...' : 'Soumettre' }}
+      </button>
+    </div>
+
+  </div>
+</div>
+    <!-- ═══ SUBMIT PAGE ═══ -->
+<!-- ═══ SUBMIT PAGE ═══ -->
+<div class="page" [class.active]="activePage === 'submit'">
+
+  <!-- ── Loader ── -->
+  <div *ngIf="submitLoading" style="text-align:center;padding:3rem;">
+    <i class="fas fa-spinner fa-spin" style="color:var(--accent-violet);font-size:2rem;"></i>
+  </div>
+
+  <!-- ── Aucune inscription ── -->
+  <div *ngIf="!submitLoading && myRegistrations.length === 0"
+       style="text-align:center;padding:4rem 2rem;color:var(--gray-400);">
+    <i class="fas fa-code fa-3x" style="margin-bottom:1rem;opacity:0.4;"></i>
+    <p style="font-size:1rem;font-weight:600;margin-bottom:0.5rem;">No hackathon registration found</p>
+    <p style="font-size:0.85rem;">Register your team to a hackathon to access this section.</p>
+    <button class="btn btn-primary btn-sm" style="margin-top:1rem;" (click)="navigate('hackathons')">
+      <i class="fas fa-rocket"></i> 	See hackathons
+    </button>
+  </div>
+
+  <!-- ── Contenu principal ── -->
+  <ng-container *ngIf="!submitLoading && myRegistrations.length > 0">
+
+    <!-- Header -->
+    <div style="margin-bottom:1.5rem;">
+      <h1 style="font-size:1.5rem;font-weight:800;" class="gradient-text">
+        📁  Submit my work
+      </h1>
+      <p style="color:var(--gray-500);font-size:0.9rem;margin-top:0.2rem;">
+        {{ activeRegistrations.length }} hackathon(s) with open submissions
+      </p>
+    </div>
+
+    <!-- Aucun hackathon actif (toutes deadlines passées) -->
+    <div *ngIf="activeRegistrations.length === 0"
+         style="text-align:center;padding:3rem 2rem;color:var(--gray-400);">
+      <i class="fas fa-lock fa-3x" style="margin-bottom:1rem;opacity:0.4;"></i>
+      <p style="font-size:1rem;font-weight:600;">All deadlines have passed</p>
+      <p style="font-size:0.85rem;">No ongoing hackathon allows file submissions.</p>
+    </div>
+
+    <!-- Une carte par hackathon avec deadline ouverte -->
+    <div *ngFor="let reg of activeRegistrations" style="margin-bottom:2.5rem;">
+
+      <!-- Titre séparateur -->
+      <div style="margin-bottom:1rem;padding-bottom:0.6rem;
+                  border-bottom:2px solid var(--gray-100);
+                  display:flex;align-items:center;gap:0.75rem;">
+        <span style="font-size:1.1rem;font-weight:800;">{{ reg.hackathon?.title }}</span>
+        <span style="font-size:0.82rem;color:var(--gray-500);">
+          — Team  <strong>{{ reg.teamName }}</strong>
+        </span>
+        <!-- Badge alerte < 24h -->
+        <span *ngIf="isDeadlineSoon(reg)"
+              style="margin-left:auto;font-size:0.72rem;font-weight:700;
+                     border-radius:20px;padding:3px 10px;
+                     background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;">
+          <i class="fas fa-exclamation-triangle"></i> Less than 24 hours!
+        </span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start;">
+
+        <!-- ── COLONNE GAUCHE : Deadline + Countdown ── -->
+        <div>
+
+          <!-- Card statut deadline -->
+          <div class="card" style="margin-bottom:1.2rem;border:2px solid #bbf7d0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+              <div class="card-title" style="margin:0;">
+                <i class="fas fa-clock"></i> Submission deadline
+              </div>
+              <span style="font-size:0.75rem;font-weight:700;border-radius:20px;padding:4px 14px;
+                            background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;">
+                ✓ Open
+              </span>
+            </div>
+
+            <!-- Date deadline -->
+            <div style="text-align:center;margin-bottom:1.2rem;">
+              <div style="font-size:0.72rem;color:var(--gray-500);text-transform:uppercase;
+                          letter-spacing:1px;margin-bottom:0.3rem;">Deadline</div>
+              <div style="font-size:1rem;font-weight:700;color:#065f46;">
+                {{ formatDeadlineFull(reg.hackathon?.submissionDeadline) }}
+              </div>
+            </div>
+
+            <!-- Chronomètre (uniquement pour le premier hackathon actif) -->
+            <div *ngIf="reg === activeRegistrations[0]"
+                 style="display:flex;justify-content:center;gap:0.6rem;margin-bottom:1.2rem;">
+              <div class="cunit-angular">
+                <span>{{ countdownDays }}</span><label>Days</label>
+              </div>
+              <div style="font-size:1.4rem;font-weight:800;color:#cbd5e1;
+                          align-self:flex-start;padding-top:0.4rem;">:</div>
+              <div class="cunit-angular">
+                <span>{{ countdownHours }}</span><label>Hours</label>
+              </div>
+              <div style="font-size:1.4rem;font-weight:800;color:#cbd5e1;
+                          align-self:flex-start;padding-top:0.4rem;">:</div>
+              <div class="cunit-angular">
+                <span>{{ countdownMins }}</span><label>Min</label>
+              </div>
+              <div style="font-size:1.4rem;font-weight:800;color:#cbd5e1;
+                          align-self:flex-start;padding-top:0.4rem;">:</div>
+              <div class="cunit-angular">
+                <span>{{ countdownSecs }}</span><label>Sec</label>
+              </div>
+            </div>
+
+            <!-- Barre de progression -->
+            <div>
+              <div style="display:flex;justify-content:space-between;
+                          font-size:0.72rem;color:var(--gray-500);margin-bottom:0.4rem;">
+                <span>Time elapsed</span>
+                <span style="font-weight:600;"
+                      [style.color]="isDeadlineSoon(reg) ? '#dc2626' : '#059669'">
+                  {{ submitProgressPercent }}% elapsed
+                </span>
+              </div>
+              <div style="height:10px;background:var(--gray-200);border-radius:5px;overflow:hidden;">
+                <div style="height:100%;border-radius:5px;transition:width 1s ease;"
+                     [style.width.%]="submitProgressPercent"
+                     [style.background]="submitProgressPercent > 80
+                       ? 'linear-gradient(90deg,#ef4444,#dc2626)'
+                       : submitProgressPercent > 50
+                         ? 'linear-gradient(90deg,#f59e0b,#d97706)'
+                         : 'linear-gradient(90deg,#3b82f6,#8b5cf6)'">
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;
+                          font-size:0.65rem;color:var(--gray-400);margin-top:0.3rem;">
+                <span>Hackathon start</span>
+                <span>Deadline</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card infos équipe -->
+          <div class="card">
+            <div class="card-title"><i class="fas fa-users"></i> My Team</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+              <div>
+                <div style="font-size:0.7rem;color:var(--gray-500);font-weight:600;
+                            text-transform:uppercase;letter-spacing:0.5px;">Team</div>
+                <div style="font-size:0.9rem;font-weight:700;margin-top:0.2rem;">{{ reg.teamName }}</div>
+              </div>
+              <div>
+                <div style="font-size:0.7rem;color:var(--gray-500);font-weight:600;
+                            text-transform:uppercase;letter-spacing:0.5px;">Size</div>
+                <div style="font-size:0.9rem;font-weight:700;margin-top:0.2rem;">{{ reg.teamSize }} membres</div>
+              </div>
+              <div>
+                <div style="font-size:0.7rem;color:var(--gray-500);font-weight:600;
+                            text-transform:uppercase;letter-spacing:0.5px;">Leader</div>
+                <div style="font-size:0.9rem;font-weight:700;margin-top:0.2rem;">{{ reg.leaderName }}</div>
+              </div>
+              <div>
+                <div style="font-size:0.7rem;color:var(--gray-500);font-weight:600;
+                            text-transform:uppercase;letter-spacing:0.5px;">Email</div>
+                <div style="font-size:0.82rem;font-weight:600;margin-top:0.2rem;color:#3b82f6;">
+                  {{ reg.leaderEmail }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ── COLONNE DROITE : Upload fichiers ── -->
+        <div>
+
+          <!-- Card upload -->
+          <div class="card" style="margin-bottom:1.2rem;">
+            <div class="card-title">
+              <i class="fas fa-upload" style="color:#3b82f6;"></i> Submit my files
+            </div>
+
+            <!-- Check-in requis -->
+            <div *ngIf="!reg?.teamFolderId"
+                 style="text-align:center;padding:2rem 1rem;">
+              <div style="width:56px;height:56px;border-radius:50%;background:#fef9c3;
+                          display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem;">
+                <i class="fas fa-qrcode" style="font-size:1.4rem;color:#ca8a04;"></i>
+              </div>
+              <div style="font-size:0.9rem;font-weight:700;color:var(--gray-700);margin-bottom:0.4rem;">
+                Check-in required
+              </div>
+              <div style="font-size:0.8rem;color:var(--gray-500);line-height:1.5;">
+  Scan the QR code at check-in to enable submission.
+              </div>
+            </div>
+
+            <!-- Zone upload active -->
+            <div *ngIf="reg?.teamFolderId">
+
+              <!-- Drop zone -->
+              <div (click)="pickSubmitFilesForReg(reg)"
+                   style="border:2px dashed #c7d2fe;border-radius:14px;padding:1.5rem;
+                          text-align:center;cursor:pointer;background:#f8f9ff;transition:all 0.2s;"
+                   onmouseenter="this.style.borderColor='#3b82f6';this.style.background='#eff6ff'"
+                   onmouseleave="this.style.borderColor='#c7d2fe';this.style.background='#f8f9ff'">
+                <i class="fas fa-cloud-upload-alt"
+                   style="font-size:2rem;color:#3b82f6;margin-bottom:0.5rem;display:block;"></i>
+                <div style="font-size:0.88rem;font-weight:700;color:#1e40af;">
+Click to select your files
+                </div>
+                <div style="font-size:0.75rem;color:var(--gray-400);margin-top:0.25rem;">
+                  PDF, ZIP, PPTX, DOCX, images, vidéos
+                </div>
+              </div>
+
+              <!-- Liste fichiers sélectionnés -->
+              <div *ngIf="getFilesForReg(reg.id!).length > 0" style="margin-top:1rem;">
+                <div style="font-size:0.78rem;font-weight:700;color:var(--gray-600);margin-bottom:0.5rem;">
+                  {{ getFilesForReg(reg.id!).length }} file(s) selected
+                </div>
+                <div *ngFor="let f of getFilesForReg(reg.id!); let i = index"
+                     style="display:flex;align-items:center;gap:0.6rem;
+                            padding:0.6rem 0.75rem;border-radius:10px;
+                            background:var(--gray-50);border:1px solid var(--gray-200);
+                            margin-bottom:0.4rem;">
+                  <i class="fas" [ngClass]="getFileIcon(f.name)"
+                     style="color:#3b82f6;font-size:1rem;flex-shrink:0;"></i>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:0.82rem;font-weight:600;
+                                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ f.name }}</div>
+                    <div style="font-size:0.7rem;color:var(--gray-400);">
+                      {{ (f.size / 1024 / 1024).toFixed(2) }} MB
+                    </div>
+                  </div>
+                  <button (click)="removeFileForReg(reg.id!, i)"
+                          style="background:none;border:none;cursor:pointer;
+                                 color:#ef4444;font-size:0.85rem;padding:0.2rem;">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+
+                <!-- Bouton soumettre -->
+                <button (click)="submitFilesForReg(reg)"
+                        [disabled]="submitUploading"
+                        style="width:100%;margin-top:0.75rem;padding:0.9rem;
+                               border-radius:12px;border:none;cursor:pointer;font-weight:700;
+                               font-size:0.9rem;color:#fff;
+                               background:linear-gradient(135deg,#1e3a8a,#3b82f6);
+                               box-shadow:0 4px 15px rgba(30,58,138,0.3);">
+                  <i class="fas" [class.fa-upload]="!submitUploading"
+                                 [class.fa-spinner]="submitUploading"
+                                 [class.fa-spin]="submitUploading"
+                                 style="margin-right:0.5rem;"></i>
+                  {{ submitUploading ? 'Upload en cours...' : 'Soumettre au Drive' }}
+                </button>
+              </div>
+
+              <!-- Résultats upload -->
+              <div *ngIf="getResultsForReg(reg.id!).length > 0" style="margin-top:1rem;">
+                <div style="font-size:0.78rem;font-weight:700;color:var(--gray-600);margin-bottom:0.5rem;">
+                  Results :
+                </div>
+                <div *ngFor="let r of getResultsForReg(reg.id!)"
+                     style="display:flex;align-items:center;gap:0.6rem;
+                            padding:0.5rem 0.75rem;border-radius:8px;margin-bottom:0.3rem;"
+                     [style.background]="r.success ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)'"
+                     [style.border]="r.success ? '1px solid #bbf7d0' : '1px solid #fecaca'">
+                  <i class="fas" [class.fa-check-circle]="r.success"
+                                 [class.fa-times-circle]="!r.success"
+                                 [style.color]="r.success ? '#059669' : '#dc2626'"></i>
+                  <span style="font-size:0.8rem;flex:1;font-weight:600;">{{ r.name }}</span>
+                  <a *ngIf="r.link" [href]="r.link" target="_blank"
+                     style="font-size:0.72rem;color:#3b82f6;text-decoration:none;">
+                    <i class="fas fa-external-link-alt"></i>
+                  </a>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Card instructions -->
+          <div class="card">
+            <div class="card-title"><i class="fas fa-list-check"></i> Instructions</div>
+            <div style="display:flex;flex-direction:column;gap:0.75rem;">
+              <div style="display:flex;gap:0.75rem;align-items:flex-start;">
+                <div style="width:24px;height:24px;border-radius:50%;flex-shrink:0;
+                            background:linear-gradient(135deg,#3b82f6,#1e3a8a);
+                            display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:0.7rem;font-weight:800;color:#fff;">1</span>
+                </div>
+                <div style="font-size:0.82rem;color:var(--gray-600);">
+                  <strong>Scan the QR code</strong> at the hackathon entrance to activate your workspace
+                </div>
+              </div>
+              <div style="display:flex;gap:0.75rem;align-items:flex-start;">
+                <div style="width:24px;height:24px;border-radius:50%;flex-shrink:0;
+                            background:linear-gradient(135deg,#8b5cf6,#6d28d9);
+                            display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:0.7rem;font-weight:800;color:#fff;">2</span>
+                </div>
+                <div style="font-size:0.82rem;color:var(--gray-600);">
+                  <strong>Select your files</strong> (code, presentation, demo)
+                </div>
+              </div>
+              <div style="display:flex;gap:0.75rem;align-items:flex-start;">
+                <div style="width:24px;height:24px;border-radius:50%;flex-shrink:0;
+                            background:linear-gradient(135deg,#f59e0b,#d97706);
+                            display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:0.7rem;font-weight:800;color:#fff;">3</span>
+                </div>
+                <div style="font-size:0.82rem;color:var(--gray-600);">
+                  <strong>Click "Submit to Drive"</strong> — files are stored in your Google Drive folder
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+</div>
+
+
+
+
+<!-- ═══ WAR ROOM PAGE ═══ -->
+<!-- ═══ WAR ROOM PAGE ═══ -->
+<div class="page" [class.active]="activePage === 'warroom'">
+
+  <!-- Loader -->
+  <div *ngIf="warRoomLoading" style="text-align:center;padding:3rem;">
+    <i class="fas fa-spinner fa-spin"
+       style="color:var(--accent-violet);font-size:2rem;"></i>
+  </div>
+
+  <ng-container *ngIf="!warRoomLoading">
+
+    <!-- ── Aucune War Room ── -->
+    <div *ngIf="myWarRooms.size === 0 && receivedInvitations.length === 0"
+         style="text-align:center;padding:4rem 2rem;color:var(--gray-400);">
+      <i class="fas fa-rocket fa-3x"
+         style="margin-bottom:1rem;opacity:0.4;"></i>
+      <p style="font-size:1rem;font-weight:600;margin-bottom:0.5rem;">
+        No War Room available
+      </p>
+      <p style="font-size:0.85rem;">
+Register your team for a hackathon to activate your War Room.      </p>
+      <button class="btn btn-primary btn-sm"
+              style="margin-top:1rem;"
+              (click)="navigate('hackathons')">
+        <i class="fas fa-code"></i> See hackathons
+      </button>
+    </div>
+
+    <ng-container *ngIf="myWarRooms.size > 0 || receivedInvitations.length > 0">
+
+      <!-- ══ SÉLECTEUR DE WAR ROOM ══ -->
+      <div style="margin-bottom:1.5rem;">
+        <h1 style="font-size:1.5rem;font-weight:800;" class="gradient-text">
+          🚀 My War Rooms
+        </h1>
+        <p style="color:var(--gray-500);font-size:0.85rem;margin-top:0.2rem;">
+Select a War Room to access it        </p>
+      </div>
+
+      <!-- Mes War Rooms (par hackathon) -->
+      <!-- Mes War Rooms (par hackathon) -->
+<div style="margin-bottom:1.5rem;">
+  <div style="font-size:0.75rem;font-weight:700;color:var(--gray-500);
+              text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.75rem;">
+    <i class="fas fa-rocket" style="color:#8b5cf6;"></i> My hackathons
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:0.75rem;">
+    
+    <!-- ✅ Mes War Rooms propres -->
+    <div *ngFor="let reg of myRegistrations"
+         (click)="selectWarRoom(reg.id!)"
+         style="border:2px solid;border-radius:12px;padding:0.85rem 1.2rem;
+                cursor:pointer;transition:all 0.2s;min-width:200px;"
+         [style.border-color]="activeWarRoomRegId === reg.id ? '#8b5cf6' : 'var(--gray-200)'"
+         [style.background]="activeWarRoomRegId === reg.id ? 'rgba(139,92,246,0.06)' : '#fff'">
+      <div style="font-weight:700;font-size:0.88rem;margin-bottom:0.25rem;">
+        {{ reg.hackathon?.title ?? 'Hackathon' }}
+      </div>
+      <div style="font-size:0.72rem;color:var(--gray-500);">
+        <i class="fas fa-users"></i> {{ reg.teamName }}
+        &nbsp;·&nbsp;
+        <i class="fas fa-calendar"></i>
+        {{ formatDate(reg.hackathon?.endDate) }}
+      </div>
+      <div *ngIf="activeWarRoomRegId === reg.id && warRoomClosingAlert"
+           style="margin-top:0.4rem;font-size:0.68rem;font-weight:700;
+                  border-radius:6px;padding:2px 8px;display:inline-block;
+                  background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;">
+        <i class="fas fa-exclamation-triangle"></i>Closing soon
+      </div>
+    </div>
+
+    <!-- ✅ War Rooms rejointes via invitation -->
+    <div *ngFor="let regId of getInvitedWarRoomKeys()"
+         (click)="selectWarRoom(regId)"
+         style="border:2px solid;border-radius:12px;padding:0.85rem 1.2rem;
+                cursor:pointer;transition:all 0.2s;min-width:200px;"
+         [style.border-color]="activeWarRoomRegId === regId ? '#3b82f6' : '#bfdbfe'"
+         [style.background]="activeWarRoomRegId === regId ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.02)'">
+      <div style="font-weight:700;font-size:0.88rem;margin-bottom:0.25rem;">
+        {{ myWarRooms.get(regId)?.name }}
+      </div>
+      <div style="font-size:0.72rem;color:var(--gray-500);">
+        <i class="fas fa-envelope-open-text" style="color:#3b82f6;"></i>
+       War Room joined via invitation
+      </div>
+    </div>
+
+  </div>
+</div>
+
+      <!-- Invitations reçues -->
+      <div *ngIf="receivedInvitations.length > 0" style="margin-bottom:1.5rem;">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--gray-500);
+                    text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.75rem;">
+          <i class="fas fa-envelope-open-text" style="color:#3b82f6;"></i>
+          	Received invitations ({{ receivedInvitations.length }})
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.75rem;">
+          <div *ngFor="let inv of receivedInvitations"
+               style="border:2px solid #bfdbfe;border-radius:12px;
+                      padding:0.85rem 1.2rem;min-width:200px;
+                      background:rgba(59,130,246,0.04);">
+            <div style="font-weight:700;font-size:0.88rem;margin-bottom:0.25rem;">
+              {{ inv.name }}
+            </div>
+            <div style="font-size:0.72rem;color:var(--gray-500);margin-bottom:0.6rem;">
+              <i class="fas fa-users" style="color:#3b82f6;"></i>
+              Another team's War Room
+            </div>
+            <button class="btn btn-primary btn-sm"
+                    style="font-size:0.72rem;padding:4px 12px;"
+                    (click)="joinInvitedWarRoom(inv)">
+              <i class="fas fa-door-open"></i> Join
+            </button>
+          </div>
+        </div>
+      </div>
+   <!-- ⚠️ ALERTE FERMETURE DANS 24H ⚠️ -->
+        <div *ngIf="warRoomClosingAlert"
+             style="background:linear-gradient(135deg,#fff7ed,#fef3c7);
+                    border:2px solid #f59e0b;border-radius:14px;
+                    padding:1.25rem 1.5rem;margin-bottom:1.5rem;
+                    display:flex;align-items:flex-start;gap:1rem;">
+          <div style="width:44px;height:44px;border-radius:50%;flex-shrink:0;
+                      background:#f59e0b;display:flex;align-items:center;
+                      justify-content:center;">
+            <i class="fas fa-exclamation-triangle"
+               style="color:#fff;font-size:1.1rem;"></i>
+          </div>
+          <div style="flex:1;">
+            <div style="font-weight:800;font-size:0.95rem;color:#92400e;
+                        margin-bottom:0.3rem;">
+              ⚠️  Your War Room is closing soon!
+            </div>
+            <div style="font-size:0.82rem;color:#78350f;line-height:1.5;
+                        margin-bottom:0.75rem;">
+The hackathon is over. The War Room will remain accessible until
+              <strong>{{ warRoomCloseDate }}</strong> (24 hours after the end).
+Remember to export your sprint before it closes.
+            </div>
+            <button class="btn btn-sm"
+                    (click)="exportSprintPdf()"
+                    style="background:#f59e0b;color:#fff;border:none;
+                           font-weight:700;font-size:0.8rem;">
+              <i class="fas fa-download"></i>	Export sprint now
+            </button>
+          </div>
+        </div>
+      <!-- ══ CONTENU WAR ROOM ACTIVE ══ -->
+      <ng-container *ngIf="myWarRoom && !warRoomClosed">
+
+     
+
+        <!-- Header War Room active -->
+        <div style="display:flex;align-items:center;
+                    justify-content:space-between;margin-bottom:1.5rem;">
+          <div>
+            <h2 style="font-size:1.2rem;font-weight:800;margin:0;">
+              🚀 {{ myWarRoom.name }}
+            </h2>
+            <p style="color:var(--gray-500);font-size:0.8rem;margin-top:0.2rem;">
+              Active polling every 3s
+              <span style="display:inline-block;width:8px;height:8px;
+                           border-radius:50%;background:#22c55e;
+                           margin-left:6px;animation:pulse 1.5s infinite;">
+              </span>
+            </p>
+          </div>
+          <div style="display:flex;gap:0.5rem;">
+            <!-- Export Sprint -->
+            <button class="btn btn-sm"
+                    (click)="exportSprintPdf()"
+                    style="background:linear-gradient(135deg,#10b981,#059669);
+                           color:#fff;border:none;">
+              <i class="fas fa-download"></i> 	Export sprint
+            </button>
+            <!-- Partager -->
+            <button class="btn btn-primary"
+                    (click)="openShareModal()"
+                    style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);">
+              <i class="fas fa-share-alt"></i> 	Share
+            </button>
+          </div>
+        </div>
+
+        <!-- Onglets -->
+        <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem;
+                    border-bottom:2px solid var(--gray-100);
+                    padding-bottom:0.75rem;">
+          <button class="filter-btn"
+                  [class.active]="warRoomTab === 'kanban'"
+                  (click)="warRoomTab = 'kanban'">
+            <i class="fas fa-columns"></i> Kanban
+          </button>
+  <button class="filter-btn"
+        [class.active]="warRoomTab === 'whiteboard'"
+        (click)="warRoomTab = 'whiteboard'; initWhiteboardForCurrent()">
+  <i class="fas fa-chalkboard"></i> Whiteboard
+</button>
+        </div>
+
+        <!-- KANBAN -->
+        <div *ngIf="warRoomTab === 'kanban'">
+
+          <!-- Ajouter tâche -->
+          <div class="card" style="margin-bottom:1rem;">
+            <div class="card-title">
+              <i class="fas fa-plus-circle" style="color:#8b5cf6;"></i>
+              	Add a task
+            </div>
+            <div style="display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap;">
+              <div style="flex:1;min-width:180px;">
+                <input class="form-control"
+                       [(ngModel)]="newTaskTitle"
+                       placeholder="Task title..."
+                       (keyup.enter)="addTask()">
+              </div>
+              <div style="flex:2;min-width:200px;">
+                <input class="form-control"
+                       [(ngModel)]="newTaskDescription"
+                       placeholder="	Description (optional)..."
+                       (keyup.enter)="addTask()">
+              </div>
+              <button class="btn btn-primary"
+                      (click)="addTask()"
+                      [disabled]="!newTaskTitle.trim()">
+                <i class="fas fa-plus"></i> Add
+              </button>
+            </div>
+          </div>
+
+          <!-- Colonnes Kanban -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
+
+            <!-- TODO -->
+            <div class="card kanban-col"
+                 [class.drag-over]="dragOverColumn === 'TODO'"
+                 (dragover)="onDragOver($event, 'TODO')"
+                 (dragleave)="onDragLeave()"
+                 (drop)="onDrop($event, 'TODO')">
+              <div class="card-title"
+                   style="color:#3b82f6;border-bottom:2px solid #3b82f6;
+                          padding-bottom:0.5rem;margin-bottom:1rem;">
+                <i class="fas fa-circle"></i> À faire
+                <span style="float:right;background:rgba(59,130,246,0.1);
+                             color:#3b82f6;border-radius:12px;
+                             padding:2px 10px;font-size:0.75rem;">
+                  {{ getTasksByStatus('TODO').length }}
+                </span>
+              </div>
+              <div *ngFor="let task of getTasksByStatus('TODO')"
+                   class="task-card" draggable="true"
+                   [class.dragging]="draggedTask?.id === task.id"
+                   (dragstart)="onDragStart(task)"
+                   (dragend)="onDragEnd()">
+                <div class="drag-handle"><i class="fas fa-grip-vertical"></i></div>
+                <div class="task-title">{{ task.title }}</div>
+                <div class="task-desc" *ngIf="task.description">
+                  {{ task.description }}
+                </div>
+                <div class="task-actions">
+                  <button class="task-btn" (click)="moveTask(task, 'DOING')">
+                    <i class="fas fa-play"></i>
+                  </button>
+                  <button class="task-btn danger" (click)="deleteTask(task.id!)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+              <div *ngIf="getTasksByStatus('TODO').length === 0"
+                   class="kanban-empty">
+                <i class="fas fa-inbox"></i>
+                <span>	Drag a task here</span>
+              </div>
+            </div>
+
+            <!-- DOING -->
+            <div class="card kanban-col"
+                 [class.drag-over]="dragOverColumn === 'DOING'"
+                 (dragover)="onDragOver($event, 'DOING')"
+                 (dragleave)="onDragLeave()"
+                 (drop)="onDrop($event, 'DOING')">
+              <div class="card-title"
+                   style="color:#f59e0b;border-bottom:2px solid #f59e0b;
+                          padding-bottom:0.5rem;margin-bottom:1rem;">
+                <i class="fas fa-spinner"></i> En cours
+                <span style="float:right;background:rgba(245,158,11,0.1);
+                             color:#f59e0b;border-radius:12px;
+                             padding:2px 10px;font-size:0.75rem;">
+                  {{ getTasksByStatus('DOING').length }}
+                </span>
+              </div>
+              <div *ngFor="let task of getTasksByStatus('DOING')"
+                   class="task-card doing" draggable="true"
+                   [class.dragging]="draggedTask?.id === task.id"
+                   (dragstart)="onDragStart(task)"
+                   (dragend)="onDragEnd()">
+                <div class="drag-handle"><i class="fas fa-grip-vertical"></i></div>
+                <div class="task-title">{{ task.title }}</div>
+                <div class="task-desc" *ngIf="task.description">
+                  {{ task.description }}
+                </div>
+                <div class="task-actions">
+                  <button class="task-btn" (click)="moveTask(task, 'TODO')">
+                    <i class="fas fa-arrow-left"></i>
+                  </button>
+                  <button class="task-btn success" (click)="moveTask(task, 'DONE')">
+                    <i class="fas fa-check"></i>
+                  </button>
+                  <button class="task-btn danger" (click)="deleteTask(task.id!)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+              <div *ngIf="getTasksByStatus('DOING').length === 0"
+                   class="kanban-empty">
+                <i class="fas fa-inbox"></i>
+                <span>Drag a task here</span>
+              </div>
+            </div>
+
+            <!-- DONE -->
+            <div class="card kanban-col"
+                 [class.drag-over]="dragOverColumn === 'DONE'"
+                 (dragover)="onDragOver($event, 'DONE')"
+                 (dragleave)="onDragLeave()"
+                 (drop)="onDrop($event, 'DONE')">
+              <div class="card-title"
+                   style="color:#22c55e;border-bottom:2px solid #22c55e;
+                          padding-bottom:0.5rem;margin-bottom:1rem;">
+                <i class="fas fa-check-circle"></i> Done
+                <span style="float:right;background:rgba(34,197,94,0.1);
+                             color:#22c55e;border-radius:12px;
+                             padding:2px 10px;font-size:0.75rem;">
+                  {{ getTasksByStatus('DONE').length }}
+                </span>
+              </div>
+              <div *ngFor="let task of getTasksByStatus('DONE')"
+                   class="task-card done" draggable="true"
+                   [class.dragging]="draggedTask?.id === task.id"
+                   (dragstart)="onDragStart(task)"
+                   (dragend)="onDragEnd()">
+                <div class="drag-handle"><i class="fas fa-grip-vertical"></i></div>
+                <div class="task-title"
+                     style="text-decoration:line-through;opacity:0.6;">
+                  {{ task.title }}
+                </div>
+                <div class="task-actions">
+                  <button class="task-btn" (click)="moveTask(task, 'DOING')">
+                    <i class="fas fa-redo"></i>
+                  </button>
+                  <button class="task-btn danger" (click)="deleteTask(task.id!)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+              <div *ngIf="getTasksByStatus('DONE').length === 0"
+                   class="kanban-empty">
+                <i class="fas fa-inbox"></i>
+                <span>	Drag a task here</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Stats sprint -->
+          <div style="margin-top:1.25rem;padding:1rem 1.5rem;
+                      background:rgba(139,92,246,0.05);border-radius:12px;
+                      border:1px solid rgba(139,92,246,0.15);
+                      display:flex;gap:2rem;align-items:center;flex-wrap:wrap;">
+            <div style="font-size:0.8rem;font-weight:700;color:#6d28d9;">
+              <i class="fas fa-chart-bar"></i> 	Sprint stats
+            </div>
+            <div style="font-size:0.8rem;color:var(--gray-600);">
+              Total : <strong>{{ warRoomTasks.length }}</strong>
+            </div>
+            <div style="font-size:0.8rem;color:#22c55e;">
+              ✓ Completed :
+              <strong>{{ getTasksByStatus('DONE').length }}</strong>
+            </div>
+            <div style="font-size:0.8rem;color:#f59e0b;">
+              ◎ In progress :
+              <strong>{{ getTasksByStatus('DOING').length }}</strong>
+            </div>
+            <div style="font-size:0.8rem;color:#3b82f6;">
+              ○ To do :
+              <strong>{{ getTasksByStatus('TODO').length }}</strong>
+            </div>
+            <div style="margin-left:auto;">
+              <div style="font-size:0.72rem;color:var(--gray-400);
+                          margin-bottom:0.3rem;text-align:right;">
+                Completion
+              </div>
+              <div style="font-size:1.1rem;font-weight:800;color:#8b5cf6;">
+                {{ warRoomTasks.length > 0
+                  ? (getTasksByStatus('DONE').length / warRoomTasks.length * 100 | number:'1.0-0')
+                  : 0 }}%
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- WHITEBOARD -->
+<div *ngIf="warRoomTab === 'whiteboard'">
+  <div class="card">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+      <div class="card-title" style="margin:0;">
+        <i class="fas fa-chalkboard" style="color:#8b5cf6;"></i>
+       Whiteboard — {{ myWarRoom?.name }}
+      </div>
+      <button class="btn btn-primary btn-sm"
+              (click)="saveWhiteboard()"
+              style="background:linear-gradient(135deg,#10b981,#059669);">
+        <i class="fas fa-save"></i> 	Save
+      </button>
+    </div>
+
+    <!-- Loader -->
+    <div *ngIf="excalidrawLoading" style="text-align:center;padding:3rem;">
+      <i class="fas fa-spinner fa-spin" style="color:#8b5cf6;font-size:2rem;"></i>
+      <p style="margin-top:0.5rem;color:var(--gray-400);font-size:0.85rem;">
+        Loading whiteboard of {{ myWarRoom?.name }}...
+      </p>
+    </div>
+
+    <!-- L'iframe qui affiche assets/whiteboard.html -->
+    <iframe *ngIf="showExcalidrawIframe"
+            id="excalidraw-iframe"
+            [src]="excalidrawUrl"
+            width="100%"
+            height="650"
+            style="border:none;border-radius:12px;border:1px solid var(--gray-200);display:block;">
+    </iframe>
+
+  </div>
+</div>
+      </ng-container>
+      <div *ngIf="myWarRoom && warRoomClosed"
+     style="text-align:center;padding:3rem 2rem;color:var(--gray-400);">
+  <i class="fas fa-lock fa-3x" style="margin-bottom:1rem;opacity:0.4;"></i>
+  <p style="font-size:1rem;font-weight:700;">War Room fermée</p>
+  <p style="font-size:0.85rem;">
+    Cette War Room a été fermée 24h après la fin du hackathon.
+  </p>
+</div>
+    </ng-container>
+  </ng-container>
+</div>
+
+<!-- ═══ MODAL PARTAGER ═══ -->
+<div class="modal-overlay" 
+     [class.open]="showShareModal"
+     (click)="showShareModal = false">
+  <div class="modal" 
+       style="max-width:500px;" 
+       (click)="$event.stopPropagation()">
+
+    <div class="modal-header" 
+         style="background:linear-gradient(135deg,#6d28d9,#8b5cf6);
+                border-radius:12px 12px 0 0;">
+      <h3 style="color:#fff;">
+        <i class="fas fa-share-alt"></i> 	Invite members
+      </h3>
+      <button class="modal-close" 
+              style="color:rgba(255,255,255,0.7);"
+              (click)="showShareModal = false">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Ajouter emails -->
+      <div style="margin-bottom:1rem;">
+        <label class="form-label">
+          <i class="fas fa-envelope"></i> 
+          	Emails to invite
+        </label>
+        <div style="display:flex;gap:0.5rem;">
+          <input class="form-control" 
+                 [(ngModel)]="inviteEmailInput"
+                 placeholder="friend@email.com"
+                 (keyup.enter)="addInviteEmail()">
+          <button class="btn btn-primary" 
+                  (click)="addInviteEmail()">
+            <i class="fas fa-plus"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Liste emails ajoutés -->
+      <div *ngIf="inviteEmails.length > 0" 
+           style="margin-bottom:1.25rem;">
+        <div style="font-size:0.78rem;font-weight:700;
+                    color:var(--gray-600);margin-bottom:0.5rem;">
+          {{ inviteEmails.length }} 	email(s) to invite:
+        </div>
+        <div *ngFor="let email of inviteEmails; let i = index"
+             style="display:flex;align-items:center;justify-content:space-between;
+                    padding:0.5rem 0.75rem;border-radius:8px;
+                    background:rgba(139,92,246,0.08);
+                    border:1px solid rgba(139,92,246,0.2);
+                    margin-bottom:0.4rem;">
+          <span style="font-size:0.85rem;">
+            <i class="fas fa-envelope" style="color:#8b5cf6;margin-right:6px;"></i>
+            {{ email }}
+          </span>
+          <button (click)="removeInviteEmail(i)"
+                  style="background:none;border:none;
+                         cursor:pointer;color:#ef4444;">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div style="background:rgba(59,130,246,0.06);
+                  border:1px solid rgba(59,130,246,0.15);
+                  border-radius:10px;padding:0.75rem 1rem;
+                  font-size:0.8rem;color:var(--gray-600);">
+        <i class="fas fa-info-circle" style="color:#3b82f6;"></i>
+Each guest will receive an email with a unique link to join your War Room.
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" 
+              (click)="showShareModal = false">
+        Cancel
+      </button>
+      <button class="btn btn-primary"
+              [disabled]="inviteEmails.length === 0 || inviteSending"
+              (click)="sendInvitations()"
+              style="background:linear-gradient(135deg,#6d28d9,#8b5cf6);">
+        <i class="fas fa-paper-plane"></i>
+        {{ inviteSending ? 'Envoi...' : 'Envoyer les invitations' }}
+      </button>
+    </div>
+  </div>
+</div>
+<!-- ═══ BOUTON FLOTTANT RECOMMANDATIONS ═══ -->
+<div class="reco-float-wrapper" [class.open]="recoFloatOpen">
+
+  <!-- Panneau qui s'agrandit -->
+  <div class="reco-float-panel">
+    <div class="reco-float-header">
+      <div style="display:flex;align-items:center;gap:0.6rem;">
+        <i class="fas fa-magic" style="color:#8b5cf6;"></i>
+        <span style="font-weight:800;font-size:0.95rem;">For you</span>
+      </div>
+      <button (click)="recoFloatOpen = false"
+              style="background:none;border:none;cursor:pointer;
+                     color:var(--gray-400);font-size:1rem;">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Loader -->
+    <div *ngIf="isLoading"
+         style="text-align:center;padding:2rem;">
+      <i class="fas fa-spinner fa-spin"
+         style="color:#8b5cf6;font-size:1.5rem;"></i>
+      <p style="font-size:0.8rem;color:var(--gray-400);margin-top:0.5rem;">
+        Analyse en cours...
+      </p>
+    </div>
+
+    <!-- Erreur -->
+    <div *ngIf="hasError && !isLoading"
+         style="text-align:center;padding:1.5rem;color:var(--gray-400);">
+      <i class="fas fa-exclamation-circle"
+         style="color:#ef4444;font-size:1.5rem;"></i>
+      <p style="font-size:0.8rem;margin-top:0.5rem;">
+      Service unavailable
+      </p>
+    </div>
+
+    <!-- Aucun résultat -->
+    <div *ngIf="!isLoading && !hasError && recommendations.length === 0"
+         style="text-align:center;padding:1.5rem;color:var(--gray-400);">
+      <i class="fas fa-search" style="font-size:1.5rem;opacity:0.4;"></i>
+      <p style="font-size:0.8rem;margin-top:0.5rem;">
+        	No recommendations
+      </p>
+    </div>
+
+    <!-- Liste recommandations -->
+    <div class="reco-float-list" *ngIf="!isLoading && recommendations.length > 0">
+      <div *ngFor="let reco of recommendations"
+           class="reco-float-item"
+           (click)="navigate('events')">
+
+        <!-- Score badge -->
+        <div class="reco-float-score"
+             [style.background]="reco.score >= 50
+               ? 'rgba(139,92,246,0.15)' : 'rgba(107,114,128,0.1)'"
+             [style.color]="reco.score >= 50 ? '#7c3aed' : '#6b7280'">
+          {{ reco.score }}%
+        </div>
+
+        <div style="flex:1;min-width:0;">
+          <!-- Titre -->
+          <div style="font-weight:700;font-size:0.82rem;
+                      white-space:nowrap;overflow:hidden;
+                      text-overflow:ellipsis;color:var(--gray-800);">
+            {{ reco.title }}
+          </div>
+
+          <!-- Lieu -->
+          <div style="font-size:0.72rem;color:var(--gray-500);
+                      margin-top:2px;display:flex;
+                      align-items:center;gap:4px;">
+            <i class="fas fa-map-marker-alt"
+               style="font-size:0.62rem;color:#8b5cf6;"></i>
+            {{ reco.location }}
+          </div>
+
+          <!-- Note + popularité -->
+          <div style="display:flex;gap:0.75rem;margin-top:4px;">
+           <!-- <span style="font-size:0.68rem;color:var(--gray-400);">
+              <i class="fas fa-star" style="color:#f59e0b;font-size:0.6rem;"></i>
+              {{ reco.feedback }}/5
+            </span>-->
+            <span style="font-size:0.68rem;color:var(--gray-400);">
+              <i class="fas fa-users" style="font-size:0.6rem;color:#3b82f6;"></i>
+              {{ reco.popularity }} registered
+            </span>
+          </div>
+        </div>
+
+        <i class="fas fa-chevron-right"
+           style="color:var(--gray-300);font-size:0.7rem;
+                  flex-shrink:0;"></i>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div *ngIf="recommendations.length > 0"
+         style="padding:0.75rem 1rem;border-top:1px solid var(--gray-100);
+                text-align:center;">
+      <button class="btn btn-primary btn-sm"
+              style="width:100%;justify-content:center;
+                     background:linear-gradient(135deg,#6d28d9,#8b5cf6);"
+              (click)="navigate('events'); recoFloatOpen = false">
+        <i class="fas fa-calendar-star"></i>
+        	See all events
+      </button>
+    </div>
+  </div>
+
+  <!-- Bouton flottant -->
+  <button class="reco-float-btn"
+          (click)="recoFloatOpen = !recoFloatOpen"
+          [class.active]="recoFloatOpen">
+    <div class="reco-float-btn-inner">
+      <i class="fas"
+         [class.fa-magic]="!recoFloatOpen"
+         [class.fa-times]="recoFloatOpen"></i>
+      <span *ngIf="!recoFloatOpen">
+        For you
+        <span class="reco-float-badge"
+              *ngIf="recommendations.length > 0">
+          {{ recommendations.length }}
+        </span>
+      </span>
+    </div>
+  </button>
+
+</div>
+  </div><!-- end page-content -->
+</div><!-- end main-area -->
+
+<!-- ─── EVENT CARD TEMPLATE ─── -->
+<ng-template #eventCardTpl let-ev="ev">
+  <div class="event-card">
+   <div class="event-cover"
+  [style.background]="ev.imageBase64
+    ? 'none'
+    : 'linear-gradient(135deg,' + (typeColors['Hackathon'][0]) + ',' + (typeColors['Hackathon'][1]) + ')'"
+  [style.padding]="ev.imageBase64 ? '0' : null"
+  style="position:relative;overflow:hidden;">
+
+  <!-- Image si disponible -->
+  <img *ngIf="ev.imageBase64"
+       [src]="'data:image/jpeg;base64,' + ev.imageBase64"
+       alt="{{ ev.title }}"
+       style="width:100%;height:100%;object-fit:cover;display:block;" />
+
+  <!-- Fallback icône -->
+  <i *ngIf="!ev.imageBase64" class="fas fa-calendar event-cover-icon"></i>
+
+  <!-- Overlay dégradé pour lisibilité des badges -->
+  <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%);pointer-events:none;"></div>
+
+ <div class="event-cover-badge">
+  <span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;
+               background:rgba(255,255,255,0.95);display:inline-flex;align-items:center;gap:5px;"
+        [style.color]="getTimeStatusColor(getItemTimeStatus(ev))">
+    <span style="width:7px;height:7px;border-radius:50%;flex-shrink:0;display:inline-block;"
+          [style.background]="getTimeStatusColor(getItemTimeStatus(ev))"></span>
+    {{ getTimeStatusLabel(getItemTimeStatus(ev)) }}
+  </span>
+</div>
+  <div class="event-cover-date"><i class="fas fa-calendar"></i> {{ formatDate(ev.startDate) }}</div>
+</div>
+    <div class="event-body">
+      <div class="event-title">{{ ev.title }}</div>
+      <div class="event-meta">
+        <span><i class="fas fa-map-marker-alt"></i>{{ ev.location }}</span>
+        <span><i class="fas fa-calendar-alt"></i>{{ formatDate(ev.startDate) }} → {{ formatDate(ev.endDate) }}</span>
+      </div>
+      <div class="event-stats">
+        <div class="event-stat"><div class="val">{{ getStandCountByEvent(ev.id!) }}</div><div class="lbl">Booths</div></div>
+        <div class="event-stat"><div class="val">{{ statusBadgeLabel(ev.status) }}</div><div class="lbl">Status</div></div>
+        <div class="event-stat"><div class="val">{{ formatDate(ev.endDate) }}</div><div class="lbl">End</div></div>
+      </div>
+      <div class="event-actions">
+          <button class="btn btn-green btn-sm" style="flex:1;" 
+          (click)="openEventModal(ev.id!)"
+          [disabled]="getItemTimeStatus(ev) === 'TERMINE'"
+          [style.opacity]="getItemTimeStatus(ev) === 'TERMINE' ? '0.4' : '1'"
+          [style.cursor]="getItemTimeStatus(ev) === 'TERMINE' ? 'not-allowed' : 'pointer'">
+    <i class="fas fa-paper-plane"></i> Participate
+  </button>
+       <button class="btn btn-secondary btn-sm" 
+          (click)="showStandsOf(ev.id!)"
+          [disabled]="getItemTimeStatus(ev) === 'TERMINE'"
+          [style.opacity]="getItemTimeStatus(ev) === 'TERMINE' ? '0.4' : '1'"
+          [style.cursor]="getItemTimeStatus(ev) === 'TERMINE' ? 'not-allowed' : 'pointer'">
+    <i class="fas fa-store"></i> Booths
+  </button>  
+        <!-- Ajouter dans la liste des events -->
+<button *ngIf="ev.status === 'APPROVED'"
+        class="btn btn-sm"
+        style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);
+               color:#fff;margin-top:0.5rem;"
+        (click)="openFeedbackModal(ev.id!)">
+  <i class="fas fa-poll"></i> Give my feedback
+</button>
+
+      </div>
+    </div>
+  </div>
+</ng-template>
+
+<!-- ─── MODAL Événement ─── -->
+<div class="modal-overlay" [class.open]="modalEventVisible" (click)="closeModal('event')">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{ matchDone ? 'Résultats de compatibilité' : 'Participer à l\'événement' }}</h3>
+      <button class="modal-close" (click)="closeModal('event')"><i class="fas fa-times"></i></button>
+    </div>
+
+    <!-- ── VUE FORMULAIRE ── -->
+    <div class="modal-body" *ngIf="currentEvent && !matchDone && !cvAnalyzing">
+      <div class="modal-event-info">
+        <i class="fas fa-calendar-star"></i>
+        <div>
+          <div class="ev-name">{{ currentEvent.title }}</div>
+          <div class="ev-meta">{{ formatDate(currentEvent.startDate) }} · {{ currentEvent.location }}</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Full name <span class="req">*</span></label>
+          <input class="form-control" [(ngModel)]="eventForm.fullName" type="text" placeholder="Ex: Eya Chebbi">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email <span class="req">*</span></label>
+          <input class="form-control" [(ngModel)]="eventForm.email" type="email" placeholder="vous@email.com">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">  Skills</label>
+        <textarea class="form-control" [(ngModel)]="eventForm.skills" rows="2"
+          placeholder="Ex: React, Python, Machine Learning..."></textarea>
+        <div class="form-hint"><i class="fas fa-info-circle"></i> Separate with commas</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">
+             Curriculum Vitae (CV)
+          <span style="font-size:0.72rem;color:var(--gray-500);margin-left:0.4rem;">—  Matching will be calculated automatically</span>
+        </label>
+        <div class="upload-zone" [class.has-file]="cvFileModal" (click)="pickFile('event')">
+          <i class="fas" [class.fa-file-pdf]="cvFileModal" [class.fa-cloud-upload-alt]="!cvFileModal"></i>
+          <p>{{ cvFileModal ? cvFileModal.name + ' — Chargé ✓' : 'Drag your CV here or browse' }}</p>
+          <p style="font-size:0.72rem;color:var(--gray-500);margin-top:0.2rem;">PDF only</p>
+        </div>
+      </div>
+
+    <!-- ── EMAIL INFO BANNER ── -->
+      <div style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.15);border-radius:0.75rem;padding:0.75rem 1rem;display:flex;align-items:center;gap:0.6rem;">
+        <i class="fas fa-envelope" style="color:#3b82f6;font-size:0.9rem;"></i>
+        <span style="font-size:0.78rem;color:var(--gray-600);">
+          A confirmation email with details and an <strong>entry QR code</strong> will be sent to you after registration.
+        </span>
+      </div>
+    </div>
+
+    <!-- ── LOADING VIEW ── -->
+    <div class="modal-body" *ngIf="cvAnalyzing"
+         style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;padding:3rem 2rem;text-align:center">
+      <i class="fas fa-brain fa-3x" style="color:var(--primary);animation:pulse 1.5s infinite"></i>
+      <div style="font-weight:600;font-size:1.05rem">Analyzing your CV...</div>
+      <div style="color:var(--gray-500);font-size:0.85rem">Groq extracts your skills · HuggingFace calculates compatibility</div>
+      <div class="spinner" style="width:32px;height:32px;border:3px solid var(--gray-200);border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite"></div>
+    </div>
+
+    <!-- ── MATCHING RESULTS VIEW ── -->
+    <div class="modal-body" *ngIf="matchDone && !cvAnalyzing" style="max-height:70vh;overflow-y:auto">
+      <div class="modal-event-info" *ngIf="currentEvent" style="margin-bottom:1.2rem">
+        <i class="fas fa-check-circle" style="color:#22c55e"></i>
+        <div>
+          <div class="ev-name">Application sent for {{ currentEvent.title }}</div>
+          <div class="ev-meta">Here is your compatibility with the booths of this event</div>
+        </div>
+      </div>
+
+      <!-- Email confirmation badge -->
+      <div style="background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.2);border-radius:0.75rem;padding:0.65rem 1rem;display:flex;align-items:center;gap:0.6rem;margin-bottom:1rem;">
+        <i class="fas fa-envelope-check" style="color:#22c55e;font-size:0.9rem;"></i>
+        <span style="font-size:0.78rem;color:#15803d;font-weight:500;">
+          📧 Confirmation email sent with your entry QR code
+        </span>
+      </div>
+
+      <div *ngIf="standMatchResults[0]?.cvSkillsExtracted"
+           style="background:rgba(59,130,246,0.07);border-radius:8px;padding:0.75rem 1rem;margin-bottom:1rem">
+        <div style="font-size:0.75rem;font-weight:600;color:var(--gray-500);margin-bottom:0.5rem">
+          <i class="fas fa-tags"></i> Skills detected in your CV
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.35rem">
+          <span *ngFor="let sk of standMatchResults[0].cvSkillsExtracted.split(',')"
+                style="font-size:0.72rem;background:rgba(59,130,246,0.15);color:#1d4ed8;border-radius:4px;padding:2px 8px">
+            {{ sk.trim() }}
+          </span>
+        </div>
+      </div>
+
+      <div *ngFor="let r of standMatchResultsSorted; let i = index"
+           style="border:1px solid var(--gray-200);border-radius:10px;padding:1rem;margin-bottom:0.75rem;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;width:3px;height:100%" [style.background]="levelColor(r.level)"></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-left:0.75rem">
+          <div>
+            <div style="font-weight:600;font-size:0.95rem">{{ i + 1 }}. {{ r.startupName }}</div>
+            <div style="font-size:0.75rem;color:var(--gray-500);margin-top:2px"><i class="fas fa-tag"></i> {{ r.domain }}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:1.4rem;font-weight:700" [style.color]="levelColor(r.level)">
+              {{ (r.finalScore * 100).toFixed(0) }}%
+            </div>
+            <span style="font-size:0.7rem;font-weight:600;border-radius:4px;padding:2px 8px;display:inline-block"
+                  [style.color]="levelColor(r.level)" [style.background]="levelBg(r.level)">
+              {{ r.level }}
+            </span>
+          </div>
+        </div>
+        <div style="margin-top:0.75rem;margin-left:0.75rem">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.35rem">
+            <span style="font-size:0.7rem;color:var(--gray-500);width:130px">Semantic</span>
+            <div style="flex:1;height:6px;background:var(--gray-200);border-radius:3px;overflow:hidden">
+              <div style="height:100%;background:#3b82f6;border-radius:3px;" [style.width.%]="r.semanticScore * 100"></div>
+            </div>
+            <span style="font-size:0.7rem;color:var(--gray-500);width:30px;text-align:right">{{ (r.semanticScore * 100).toFixed(0) }}%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.5rem">
+            <span style="font-size:0.7rem;color:var(--gray-500);width:130px">Keywords</span>
+            <div style="flex:1;height:6px;background:var(--gray-200);border-radius:3px;overflow:hidden">
+              <div style="height:100%;background:#8b5cf6;border-radius:3px;" [style.width.%]="r.keywordScore * 100"></div>
+            </div>
+            <span style="font-size:0.7rem;color:var(--gray-500);width:30px;text-align:right">{{ (r.keywordScore * 100).toFixed(0) }}%</span>
+          </div>
+        </div>
+        <div style="margin-top:0.6rem;margin-left:0.75rem">
+          <span style="font-size:0.7rem;color:var(--gray-400)">Required:</span>
+          <span *ngFor="let sk of r.requiredSkills.split(',')"
+                style="font-size:0.68rem;border-radius:3px;padding:1px 6px;margin-left:4px;font-weight:500;"
+                [style.background]="isSkillMatched(sk.trim(), r.cvSkillsExtracted) ? 'rgba(16,185,129,0.12)' : 'var(--gray-100)'"
+                [style.color]="isSkillMatched(sk.trim(), r.cvSkillsExtracted) ? '#059669' : 'var(--gray-600)'">
+            <i class="fas" [class.fa-check]="isSkillMatched(sk.trim(), r.cvSkillsExtracted)"
+               [class.fa-times]="!isSkillMatched(sk.trim(), r.cvSkillsExtracted)"
+               style="font-size:0.6rem;margin-right:2px;"></i>{{ sk.trim() }}
+          </span>
+        </div>
+      </div>
+
+      <div *ngIf="standMatchResults.length === 0" style="text-align:center;padding:2rem;color:var(--gray-400)">
+        <i class="fas fa-store-slash fa-2x"></i>
+        <p style="margin-top:0.75rem">No booths found for this event</p>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <ng-container *ngIf="!matchDone && !cvAnalyzing">
+        <button class="btn btn-secondary" (click)="closeModal('event')">Cancel</button>
+        <button class="btn btn-green" (click)="submitEvent()">
+          <i class="fas fa-paper-plane"></i> Submit my application
+        </button>
+      </ng-container>
+      <ng-container *ngIf="matchDone">
+        <button class="btn btn-secondary" (click)="closeModal('event')">Close</button>
+        <button class="btn btn-primary" (click)="navigate('stands')">
+          <i class="fas fa-store"></i> See all booths
+        </button>
+      </ng-container>
+    </div>
+  </div>
+</div>
+
+<!-- ─── HACKATHON MODAL ─── -->
+<div class="modal-overlay" [class.open]="modalHackVisible" (click)="closeModal('hack')">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Register my team</h3>
+      <button class="modal-close" (click)="closeModal('hack')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" *ngIf="currentHackathon">
+      <div class="modal-event-info" style="background:linear-gradient(105deg,#5b21b6,#8b5cf6);">
+        <i class="fas fa-code"></i>
+        <div>
+          <div class="ev-name">{{ currentHackathon.title }}</div>
+          <div class="ev-meta">{{ formatDate(currentHackathon.startDate) }} · {{ currentHackathon.domain }}</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Team name <span class="req">*</span></label>
+          <input class="form-control" [(ngModel)]="hackForm.teamName" type="text" placeholder="e.g., TechNinjas">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Team size <span class="req">*</span></label>
+          <input class="form-control" [(ngModel)]="hackForm.teamSize" type="number" min="1" max="10" placeholder="e.g., 4">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Leader name <span class="req">*</span></label>
+          <input class="form-control" [(ngModel)]="hackForm.leaderName" type="text" placeholder="e.g., Eya Chebbi">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Leader email <span class="req">*</span></label>
+          <input class="form-control" [(ngModel)]="hackForm.leaderEmail" type="email" placeholder="leader@email.com">
+        </div>
+      </div>
+      <div style="background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.15);border-radius:0.75rem;padding:0.85rem 1rem;">
+        <div style="font-size:0.78rem;font-weight:700;color:var(--accent-violet);margin-bottom:0.3rem;">
+          <i class="fas fa-info-circle"></i> Good to know
+        </div>
+        <div style="font-size:0.78rem;color:var(--gray-600);">
+          Your team members will receive an invitation by email after registration.
+        </div>
+      </div>
+
+      <!-- ── EMAIL INFO BANNER ── -->
+      <div style="margin-top:0.85rem;background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.15);border-radius:0.75rem;padding:0.75rem 1rem;display:flex;align-items:center;gap:0.6rem;">
+        <i class="fas fa-envelope" style="color:#3b82f6;font-size:0.9rem;"></i>
+        <span style="font-size:0.78rem;color:var(--gray-600);">
+          A confirmation email with hackathon details and an <strong>access QR code</strong> will be sent to the leader.
+        </span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal('hack')">Cancel</button>
+      <button class="btn btn-primary" (click)="submitHack()">
+        <i class="fas fa-rocket"></i> Register the team
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SUCCESS MODAL (Email confirmed) ─── -->
+<div class="modal-overlay" [class.open]="modalSuccessVisible" (click)="closeSuccessModal()" style="z-index:300;">
+  <div class="modal" (click)="$event.stopPropagation()"
+       style="max-width:440px;background:linear-gradient(160deg,#0a1628,#0d1f3c,#1a1040);border:1px solid rgba(255,255,255,0.07);">
+
+    <!-- Close -->
+    <button class="modal-close" (click)="closeSuccessModal()"
+            style="position:absolute;top:1rem;right:1rem;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);">
+      <i class="fas fa-times"></i>
+    </button>
+
+    <div style="padding:2.5rem 2rem;text-align:center;">
+
+      <!-- Animated checkmark -->
+      <div style="width:72px;height:72px;border-radius:50%;background:rgba(34,197,94,0.15);border:2px solid rgba(34,197,94,0.4);
+                  display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;">
+        <i class="fas fa-check" style="font-size:1.6rem;color:#22c55e;"></i>
+      </div>
+
+      <!-- Brand -->
+      <div style="font-size:11px;font-weight:900;letter-spacing:3px;color:rgba(255,255,255,0.3);text-transform:uppercase;margin-bottom:0.6rem;">
+        ⚡ FLEXBIDEYA
+      </div>
+
+      <h3 style="font-size:1.35rem;font-weight:800;color:#ffffff;margin:0 0 0.5rem;line-height:1.2;">
+        {{ successModalType === 'event' ? 'Registration confirmed!' : 'Team registered!' }}
+      </h3>
+      <p style="font-size:0.85rem;color:rgba(255,255,255,0.45);margin:0 0 1.5rem;line-height:1.5;">
+        {{ successModalType === 'event'
+           ? 'Your application has been successfully recorded.'
+           : 'Your team has been successfully registered for the hackathon.' }}
+      </p>
+
+      <!-- Event / Hack details pill -->
+      <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:1rem 1.2rem;text-align:left;margin-bottom:1.5rem;">
+        <div style="font-size:13px;font-weight:700;color:#ffffff;margin-bottom:0.5rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          {{ successModalType === 'event' ? '🎟️' : '🚀' }} {{ successModalTitle }}
+        </div>
+        <div style="display:flex;gap:1.25rem;flex-wrap:wrap;">
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);display:flex;align-items:center;gap:5px;">
+            <i class="fas fa-calendar" style="color:#4f80ff;"></i> {{ successModalDate }}
+          </div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);display:flex;align-items:center;gap:5px;">
+            <i class="fas fa-map-marker-alt" style="color:#a78bfa;"></i> {{ successModalLocation }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Email confirmation notice -->
+      <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:0.85rem 1rem;display:flex;align-items:flex-start;gap:0.65rem;margin-bottom:1.5rem;text-align:left;">
+        <i class="fas fa-envelope" style="color:#22c55e;font-size:1rem;margin-top:2px;flex-shrink:0;"></i>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#22c55e;margin-bottom:2px;">Email sent!</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.45);line-height:1.5;">
+            A confirmation email with details and your <strong style="color:rgba(255,255,255,0.65);">entry QR code</strong> has been sent to your email address.
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" (click)="closeSuccessModal()">
+        <i class="fas fa-check"></i> Perfect, thank you!
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TOAST CONTAINER ─── -->
+<div class="toast-container">
+  <div *ngFor="let toast of toasts" class="toast" [ngClass]="toast.type">
+    <i class="fas" [ngClass]="toast.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'"></i>
+    {{ toast.message }}
+  </div>
+</div>
+
+<!-- ─── LOGOUT CONFIRMATION MODAL ─── -->
+<div class="modal-overlay" [class.open]="showLogoutConfirm"
+     (click)="showLogoutConfirm = false"
+     style="z-index:400;">
+  <div class="modal" style="max-width:380px;text-align:center;"
+       (click)="$event.stopPropagation()">
+
+    <div style="padding:2rem 1.5rem;">
+      <div style="width:64px;height:64px;border-radius:50%;
+                  background:rgba(239,68,68,0.12);
+                  border:2px solid rgba(239,68,68,0.3);
+                  display:flex;align-items:center;justify-content:center;
+                  margin:0 auto 1.25rem;">
+        <i class="fas fa-sign-out-alt" style="font-size:1.5rem;color:#ef4444;"></i>
+      </div>
+
+      <div style="font-size:11px;font-weight:900;letter-spacing:3px;
+                  color:rgba(0,0,0,0.3);text-transform:uppercase;margin-bottom:0.5rem;">
+        ⚡ FLEXBIDEYA
+      </div>
+
+      <h3 style="font-size:1.2rem;font-weight:800;margin:0 0 0.5rem;">
+        Logout
+      </h3>
+      <p style="font-size:0.85rem;color:var(--gray-500);margin:0 0 1.75rem;line-height:1.5;">
+        Do you really want to log out?
+      </p>
+
+      <div style="display:flex;gap:0.75rem;">
+        <button class="btn btn-secondary" style="flex:1;"
+                (click)="showLogoutConfirm = false">
+          <i class="fas fa-times"></i> Cancel
+        </button>
+        <button class="btn"
+                style="flex:1;background:linear-gradient(135deg,#ef4444,#dc2626);
+                       color:#fff;border:none;font-weight:700;"
+                (click)="logout()">
+          <i class="fas fa-sign-out-alt"></i> Disconnect
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

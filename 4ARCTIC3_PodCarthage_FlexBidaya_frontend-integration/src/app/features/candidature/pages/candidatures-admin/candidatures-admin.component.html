@@ -1,0 +1,855 @@
+<!-- ============================================ -->
+<!-- ADMIN LAYOUT MODERNE (VIBRANT) -->
+<!-- ============================================ -->
+<div class="admin-layout">
+
+  <!-- ===== SIDEBAR (DASHBOARD ORGANISATEUR STYLE) ===== -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <div class="logo-circle">
+          <i class="fas fa-bolt"></i>
+        </div>
+        <div>
+          <h2 class="sidebar-brand">FLEXBIDEYA</h2>
+          <p class="sidebar-subtitle">DASHBOARD ORGANISATEUR</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN SECTION -->
+    <div class="sidebar-section">
+      <p class="sidebar-section-title">PRINCIPAL</p>
+      <a routerLink="/admin/opportunites" routerLinkActive="active" class="sidebar-link">
+        <i class="fas fa-chart-pie"></i> Opportunités
+      </a>
+      <a routerLink="/admin/candidatures" routerLinkActive="active" class="sidebar-link">
+        <i class="fas fa-user-friends"></i> Candidatures
+      </a>
+      <a (click)="currentView='stats'; computeAdminStats()" [class.active-link]="currentView==='stats'" class="sidebar-link" style="cursor:pointer;">
+        <i class="fas fa-chart-line"></i> Statistiques
+      </a>
+    </div>
+
+    <!-- COMPTE SECTION -->
+    <div class="sidebar-section">
+      <p class="sidebar-section-title">COMPTE</p>
+      <a class="sidebar-link">
+        <i class="fas fa-cog"></i> Paramètres
+      </a>
+      <a class="sidebar-link" (click)="logout()" style="cursor:pointer;">
+        <i class="fas fa-sign-out-alt"></i> Déconnexion
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" style="width: 38px; height: 38px; background: #4f46e5; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; color: white;">AD</div>
+        <div class="sidebar-user-info">
+          <strong style="display: block; font-size: 0.8rem; color: white;">Admin</strong>
+          <p style="margin: 0; font-size: 0.65rem; color: rgba(255, 255, 255, 0.4);">Administrateur</p>
+        </div>
+        <i class="fas fa-ellipsis-v sidebar-user-more"></i>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content">
+
+    <!-- VIEW: LISTE CANDIDATURES -->
+    <div *ngIf="currentView === 'list'">
+      <!-- TOP HEADER -->
+      <header class="top-header">
+        <div class="header-left">
+          <h1 class="page-title" (dblclick)="toggleAudit()" title="Double-cliquez pour afficher/masquer le journal d'audit" style="cursor: pointer; user-select: none;">
+          Gestion des candidatures
+        </h1>
+      </div>
+      <div class="header-right">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input type="text" placeholder="Rechercher une candidature...">
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== STATISTIQUES ÉPURÉES ===== -->
+    <div class="stats-grid-compact" *ngIf="candidatures">
+      <div class="stat-card-compact">
+        <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+        <div class="stat-info">
+          <h4>{{ candidatures.length }}</h4>
+          <span>Candidatures</span>
+        </div>
+      </div>
+
+      <div class="stat-card-compact">
+        <div class="stat-icon purple"><i class="fas fa-robot"></i></div>
+        <div class="stat-info">
+          <h4>{{ predictions?.prochaineSemaine || 0 }}</h4>
+          <span>Analyses IA</span>
+        </div>
+      </div>
+
+      <div class="stat-card-compact">
+        <div class="stat-icon orange"><i class="fas fa-clock"></i></div>
+        <div class="stat-info">
+          <h4>{{ getPendingCount() }}</h4>
+          <span>En attente</span>
+        </div>
+      </div>
+
+      <div class="stat-card-compact">
+        <div class="stat-icon green"><i class="fas fa-shield-alt"></i></div>
+        <div class="stat-info">
+          <h4>{{ predictions?.confiance || 95 }}%</h4>
+          <span>Fiabilité Globale</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-card">
+
+      <!-- En-tête avec bouton retour -->
+      <div class="header-actions">
+        <div class="header-title-wrapper">
+          <h3><i class="fas fa-file-signature"></i> Gestion des candidatures</h3>
+          <span class="count-pill">{{ candidatures.length }} TOTAL</span>
+        </div>
+
+        <div class="header-btns">
+          <button class="btn-sync" (click)="toggleAudit()" style="background: #1e293b; color: white; margin-right: 10px;">
+            <i class="fas fa-terminal"></i> Journal d'audit
+          </button>
+          <button class="btn-sync" [class.syncing]="isSyncing" (click)="syncBlockchain()">
+            <i class="fas fa-sync-alt" [class.fa-spin]="isSyncing"></i>
+            {{ isSyncing ? 'Sincronisation...' : 'Synchroniser Blockchain' }}
+          </button>
+          <button class="btn-back" (click)="retour()">
+            <i class="fas fa-arrow-left"></i> Retour
+          </button>
+        </div>
+      </div>
+
+      <!-- Filtres -->
+      <div class="filters">
+        <select class="filter-select" [(ngModel)]="selectedOpportuniteId" (change)="loadCandidatures()">
+          <option value="">🔎 Toutes les opportunités</option>
+          <option *ngFor="let opp of opportunites" [value]="opp.id">{{ opp.titre }}</option>
+        </select>
+        <select class="filter-select" [(ngModel)]="selectedStatut" (change)="loadCandidatures()">
+          <option value="">📋 Tous les statuts</option>
+          <option value="EN_ATTENTE">⏳ En attente</option>
+          <option value="ACCEPTEE">✅ Acceptée</option>
+          <option value="REFUSEE">❌ Refusée</option>
+        </select>
+      </div>
+
+      <!-- Message d'erreur -->
+      <div *ngIf="error" class="error-message">
+        <i class="fas fa-exclamation-circle"></i> {{ error }}
+      </div>
+
+      <!-- Tableau des candidatures -->
+      <div class="table-container">
+        <table class="candidature-table">
+          <thead>
+            <tr>
+              <th>Opportunité</th>
+              <th>Candidat</th>
+              <th>Motivation</th>
+              <th>Date</th>
+              <th>Statut</th>
+              <th>Blockchain / Intégrité</th>
+              <th>🏆 Classement</th>
+              <th>Score IA</th>
+              <th>Documents</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let c of paginatedCandidatures">
+              <!-- Opportunité Expandable -->
+              <td class="cell-trunc" [class.expanded]="expandedOppId === c.id"
+                (click)="expandedOppId = expandedOppId === c.id ? null : c.id" tabindex="0"
+                (blur)="expandedOppId = null" style="position: relative; cursor: pointer;">
+                <div class="motivation-content" [class.expanded-text]="expandedOppId === c.id">
+                  <strong [title]="expandedOppId === c.id ? '' : c.titreOpportunite">{{ c.titreOpportunite }}</strong>
+                </div>
+              </td>
+
+              <!-- Candidat -->
+              <td class="cell-user">
+                <div class="user-badge">
+                  <i class="fas fa-user-circle"></i>
+                  <span>{{ c.userId }}</span>
+                </div>
+              </td>
+
+              <!-- Motivation Expandable -->
+              <td class="cell-motivation" [class.expanded]="expandedMotivationId === c.id"
+                (click)="expandedMotivationId = expandedMotivationId === c.id ? null : c.id" tabindex="0"
+                (blur)="expandedMotivationId = null">
+                <div class="motivation-content" [title]="expandedMotivationId === c.id ? '' : 'Cliquez pour voir tout'">
+                  <i class="fas fa-expand-alt" style="font-size: 0.7rem; opacity: 0.5; margin-right: 5px;"
+                    *ngIf="expandedMotivationId !== c.id"></i>
+                  {{ c.motivation }}
+                </div>
+              </td>
+
+              <!-- Date -->
+              <td class="cell-date">{{ c.dateCandidature | date:'dd/MM/yyyy' }}</td>
+
+              <!-- Statut -->
+              <td class="cell-statut">
+                <span class="badge-statut" [ngClass]="{
+                  'statut-attente': c.statut === 'EN_ATTENTE',
+                  'statut-acceptee': c.statut === 'ACCEPTEE',
+                  'statut-refusee': c.statut === 'REFUSEE'
+                }">
+                  <i class="fas" [ngClass]="{
+                    'fa-clock': c.statut === 'EN_ATTENTE',
+                    'fa-check-circle': c.statut === 'ACCEPTEE',
+                    'fa-times-circle': c.statut === 'REFUSEE'
+                  }"></i>
+                  {{ c.statut }}
+                </span>
+              </td>
+
+              <td class="cell-blockchain">
+                <div class="bc-badge-container">
+                  <span class="badge-bc" [ngClass]="c.blockchainStatus?.toLowerCase()"
+                    (click)="viewingBlockchainId = c.id" title="Détails de sécurité">
+                    <i class="fas"
+                      [ngClass]="c.blockchainStatus === 'CERTIFIED' ? 'fa-shield-check' : 'fa-exclamation-triangle'"></i>
+                    {{ c.blockchainStatus === 'CERTIFIED' ? 'CERTIFIÉ' : (c.blockchainStatus || 'ABSENT') }}
+                  </span>
+                  <button class="btn-bc-info" (click)="viewingBlockchainId = c.id" title="Certificat d'Authenticité">
+                    <i class="fas fa-info-circle"></i>
+                  </button>
+                </div>
+
+                <!-- MODAL DU CERTIFICAT BLOCKCHAIN (CORRECTED STRUCTURE) -->
+                <div *ngIf="viewingBlockchainId === c.id" class="blockchain-modal-container">
+                  <div class="modal-overlay-bc" (click)="viewingBlockchainId = null"></div>
+                  <div class="bc-certificate-popup">
+                    <div class="bc-popup-header">
+                      <div class="bc-header-title-group">
+                        <span class="bc-main-title"><i class="fas fa-shield-halved"></i> BLOCKCHAIN SECURITY
+                          PROTOCOL</span>
+                        <div class="bc-privacy-pill" [ngClass]="c.blockchainStatus?.toLowerCase()">
+                          <i class="fas fa-link"></i> {{ c.blockchainStatus === 'CERTIFIED' ? 'VÉRIFIÉ' : 'ANOMALIE' }}
+                        </div>
+                      </div>
+                      <button class="bc-close-btn" (click)="viewingBlockchainId = null">✕</button>
+                    </div>
+                    <div class="cert-body">
+                      <div class="cert-seal">
+                        <i class="fas fa-certificate"></i>
+                        <span class="seal-text">IMMUTABLE</span>
+                      </div>
+                      <h4 class="cert-title">Certificat d'Authenticité</h4>
+                      <p class="cert-subtitle">Preuve cryptographique de l'intégrité des données via FlexBidaya
+                        Blockchain.</p>
+
+                      <div class="cert-data-grid">
+                        <div class="cert-data-item">
+                          <label>Horodatage</label>
+                          <span class="cert-val">{{ c.dateCandidature | date:'short' }}</span>
+                        </div>
+                        <div class="cert-data-item">
+                          <label>Status</label>
+                          <span class="cert-val">{{ c.blockchainStatus || '---' }}</span>
+                        </div>
+                      </div>
+
+                      <div class="cert-signature-section">
+                        <label><i class="fas fa-fingerprint"></i> Signature Numérique (Hash)</label>
+                        <div class="cert-hash-box">
+                          <code>{{ c.dataHash || 'PREUVE_NON_ATTACHEE' }}</code>
+                        </div>
+                      </div>
+
+                      <div class="cert-verdict" [ngClass]="c.blockchainStatus?.toLowerCase()">
+                        <div class="verdict-icon">
+                          <i class="fas"
+                            [ngClass]="c.blockchainStatus === 'CERTIFIED' ? 'fa-check-double' : 'fa-exclamation-triangle'"></i>
+                        </div>
+                        <div class="verdict-content">
+                          <span class="verdict-label">RÉSULTAT DU SCAN :</span>
+                          <span class="verdict-text">{{ c.blockchainStatus === 'CERTIFIED' ? 'INTÉGRITÉ VÉRIFIÉE' :
+                            'ALERTE : DONNÉES ALTÉRÉES' }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="cert-footer">
+                      <i class="fas fa-link"></i> Propriété de FlexBidaya Network
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Classement -->
+              <td class="cell-ranking">
+                <div class="ranking-wrapper">
+                  <span class="matching-score-n">{{ c.scoreIA || '0' }}%</span>
+                  <div class="matching-label">N-Match Analytic</div>
+                  <div class="match-bar-mini">
+                    <div class="match-bar-fill" [style.width.%]="c.scoreIA || 0"></div>
+                  </div>
+                  <span class="rank-badge-new">Rang #{{ c.rangClassement }}</span>
+                </div>
+              </td>
+
+              <!-- Score IA (Interactive Smart Card) -->
+              <td class="cell-score-ia">
+                <div class="ia-smart-card" [class.ia-scanned]="c.scoreIA != null"
+                  [class.ia-waiting]="c.scoreIA == null">
+
+                  <!-- Main Info Area (Click to Scan) -->
+                  <div class="ia-main-action" (click)="reanalyzeIA(c.id)" title="Lancer un scan IA local">
+                    <div class="ia-robot-wrapper">🤖</div>
+                    <div class="ia-content">
+                      <span class="ia-score-val">{{ c.scoreIA || '--' }}</span>
+                      <span class="ia-status-text">{{ c.scoreIA ? 'Scanné' : 'Scanner' }}</span>
+                    </div>
+                  </div>
+
+                  <!-- MINI-VIZ (PROFESSIONAL SIGNAL BARS) -->
+                  <div class="ia-mini-viz" *ngIf="c.scoreIA">
+                    <div class="viz-bar" [style.height.%]="c.scoreTechnique || 50"
+                      [class.high]="(c.scoreTechnique || 50) >= 70"
+                      [class.mid]="(c.scoreTechnique || 50) < 70 && (c.scoreTechnique || 50) >= 40"
+                      title="Technique: {{c.scoreTechnique}}%"></div>
+                    <div class="viz-bar" [style.height.%]="c.scoreMotivation || 50"
+                      [class.high]="(c.scoreMotivation || 50) >= 70"
+                      [class.mid]="(c.scoreMotivation || 50) < 70 && (c.scoreMotivation || 50) >= 40"
+                      title="Motivation: {{c.scoreMotivation}}%"></div>
+                    <div class="viz-bar" [style.height.%]="c.scoreSoftSkills || 50"
+                      [class.high]="(c.scoreSoftSkills || 50) >= 70"
+                      [class.mid]="(c.scoreSoftSkills || 50) < 70 && (c.scoreSoftSkills || 50) >= 40"
+                      title="Soft Skills: {{c.scoreSoftSkills}}%"></div>
+                    <div class="viz-bar" [style.height.%]="c.scoreEnthousiasme || 50"
+                      [class.high]="(c.scoreEnthousiasme || 50) >= 70"
+                      [class.mid]="(c.scoreEnthousiasme || 50) < 70 && (c.scoreEnthousiasme || 50) >= 40"
+                      title="Enthousiasme: {{c.scoreEnthousiasme}}%"></div>
+                  </div>
+
+                  <!-- Details Trigger (Click to open Dashboard) -->
+                  <button *ngIf="c.scoreIA != null" class="btn-ia-dash"
+                    (click)="selectedIACard = selectedIACard === c.id ? null : c.id" title="Analyse Détaillée">
+                    <i class="fas fa-chart-pie"></i>
+                  </button>
+                </div>
+
+                <!-- MODAL DÉTAILS IA (FULL CENTERED MODAL) -->
+                <div *ngIf="selectedIACard === c.id" class="ia-modal-container">
+                  <div class="modal-overlay-ia" (click)="selectedIACard = null"></div>
+                  <div class="ia-details-popup">
+                    <div class="ia-popup-header">
+                      <div class="ia-header-title-group">
+                        <span class="ia-main-title"><i class="fas fa-brain"></i> DASHBOARD INTELLIGENCE
+                          ARTIFICIELLE</span>
+                        <div class="ia-privacy-pill">
+                          <i class="fas fa-lock"></i> IA LOCALE (OLLAMA) — DONNÉES PRIVÉES
+                        </div>
+                      </div>
+                      <button class="ia-close-btn" (click)="selectedIACard = null">✕</button>
+                    </div>
+                    <div class="ia-popup-body">
+                      <!-- Sentiment Section -->
+                      <div class="sentiment-badge" [ngClass]="'sentiment-' + (c.sentiment?.toLowerCase() || 'neutre')">
+                        <i class="fas" [ngClass]="{
+                          'fa-grin-stars': c.sentiment === 'POSITIF',
+                          'fa-meh': c.sentiment === 'NEUTRE',
+                          'fa-frown': c.sentiment === 'NEGATIF'
+                        }"></i>
+                        <span>DÉTECTION SENTIMENT : {{ c.sentiment || 'ANALYSE...' }}</span>
+                      </div>
+
+                      <!-- Dimensional Scores -->
+                      <div class="ia-scores-container" *ngIf="c.scoreIA != null && c.scoreIA > 0">
+                        <div class="score-bar-group">
+                          <div class="score-bar-label"><span>Technique</span><span>{{ c.scoreTechnique || 0 }}%</span>
+                          </div>
+                          <div class="score-bar-bg">
+                            <div class="score-bar-fill" [style.width.%]="c.scoreTechnique || 0"></div>
+                          </div>
+                        </div>
+                        <div class="score-bar-group">
+                          <div class="score-bar-label"><span>Motivation</span><span>{{ c.scoreMotivation || 0 }}%</span>
+                          </div>
+                          <div class="score-bar-bg">
+                            <div class="score-bar-fill" [style.width.%]="c.scoreMotivation || 0"></div>
+                          </div>
+                        </div>
+                        <div class="score-bar-group">
+                          <div class="score-bar-label"><span>Soft Skills</span><span>{{ c.scoreSoftSkills || 0
+                              }}%</span></div>
+                          <div class="score-bar-bg">
+                            <div class="score-bar-fill" [style.width.%]="c.scoreSoftSkills || 0"></div>
+                          </div>
+                        </div>
+                        <div class="score-bar-group">
+                          <div class="score-bar-label"><span>Enthousiasme</span><span>{{ c.scoreEnthousiasme || 0
+                              }}%</span></div>
+                          <div class="score-bar-bg">
+                            <div class="score-bar-fill" [style.width.%]="c.scoreEnthousiasme || 0"></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Call to action if no data or to update -->
+                      <div class="ia-no-data-cta">
+                        <p style="font-size: 0.8rem; margin-bottom: 15px; color: #64748b;">
+                          Mettez à jour l'analyse pour obtenir les scores détaillés via Ollama.
+                        </p>
+                        <button class="btn-scan-ia-big" (click)="reanalyzeIA(c.id)">
+                          <i class="fas fa-sync-alt"></i> ACTUALISER L'ANALYSE
+                        </button>
+                      </div>
+
+                      <!-- Deep Analysis Section -->
+                      <div class="ia-popup-section">
+                        <div class="ia-popup-label" style="color: #6366f1;"><i class="fas fa-check-double"></i> Analyse
+                          Complète</div>
+                        <p class="ia-popup-text"><strong>Points Forts :</strong> {{ c.forcesIA }}</p>
+                        <p class="ia-popup-text" style="margin-top:10px;"><strong>Points Faibles :</strong> {{
+                          c.faiblessesIA || 'Aucun point critique.' }}</p>
+                        <p class="ia-popup-text" style="color: #4f46e5; margin-top:10px; font-weight:700;">
+                          <i class="fas fa-magic"></i> Avis IA : {{ c.recommandationIA }}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Documents -->
+              <td class="cell-docs">
+                <div class="doc-icons">
+                  <button class="btn-icon pdf" (click)="downloadCv(c.id)" title="CV PDF"><i
+                      class="fas fa-file-pdf"></i></button>
+                  <button class="btn-icon letter" (click)="downloadMotivation(c.id)" title="Lettre de Motivation"><i
+                      class="fas fa-file-alt"></i></button>
+                  <button class="btn-icon portfolio" (click)="downloadPortfolio(c.id)" title="Portfolio"><i
+                      class="fas fa-briefcase"></i></button>
+                </div>
+              </td>
+
+              <!-- Actions -->
+              <td class="cell-actions">
+                <div class="action-buttons-compact">
+                  <button *ngIf="c.blockchainStatus !== 'CERTIFIED' && c.blockchainStatus !== 'CHAINED'"
+                    class="btn-icon-compact warning" (click)="restoreIntegrity(c.id)"
+                    title="Restaurer l'intégralité (Blockchain)">
+                    <i class="fas fa-shield-virus"></i>
+                  </button>
+
+                  <button class="btn-icon-compact purple" (click)="simulateQRScan(c)" title="Générer Passeport Blockchain (QR)">
+                    <i class="fas fa-id-card"></i>
+                  </button>
+
+                  <button class="btn-icon-compact blue" (click)="predictSalary(c)" title="Estimer Salaire (IA)">
+                    <i class="fas fa-money-bill-wave"></i>
+                  </button>
+
+                  <ng-container *ngIf="c.statut === 'EN_ATTENTE'">
+                    <button class="btn-icon-compact success" (click)="accepter(c.id)" title="Accepter">
+                      <i class="fas fa-check"></i>
+                    </button>
+                    <button class="btn-icon-compact danger" (click)="refuser(c.id)" title="Refuser">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </ng-container>
+
+                  <button *ngIf="c.statut !== 'EN_ATTENTE'" class="btn-icon-compact gray" (click)="reinitialiser(c.id)"
+                    title="Réinitialiser">
+                    <i class="fas fa-history"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Améliorée -->
+      <div class="pagination-wrapper">
+        <span class="pagination-info">Page {{ currentPage }} sur {{ totalPages }}</span>
+        <div class="pagination-controls">
+          <button class="btn-page" [disabled]="currentPage === 1" (click)="prevPage()">
+            <i class="fas fa-chevron-left"></i> Précédent
+          </button>
+          
+          <div class="page-numbers">
+            <button class="btn-page-number" *ngFor="let p of pageNumbersCand" 
+              [class.active]="p === currentPage" (click)="goToPageCand(p)">
+              {{ p }}
+            </button>
+          </div>
+
+          <button class="btn-page" [disabled]="currentPage === totalPages" (click)="nextPage()">
+            Suivant <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ===== JOURNAL D´AUDIT (TERMINAL UI) - CACHÉ PAR DÉFAUT ===== -->
+    <div class="terminal-container audit-section" *ngIf="showAuditJournal">
+      <div class="terminal-header">
+        <div class="terminal-buttons">
+          <span class="dot red" (click)="showAuditJournal = false" style="cursor:pointer;" title="Fermer"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+        </div>
+        <div class="terminal-title">audit_log --security_monitor --v2.0.4</div>
+        <div class="terminal-status">
+          <span class="status-indicator live"></span> LIVE_MONITORING
+        </div>
+      </div>
+
+      <div class="terminal-body">
+        <div class="terminal-line welcome">
+          <span class="prompt">></span> initialising audit_trail --blockchain_sync...
+        </div>
+
+        <table class="terminal-table">
+          <thead>
+            <tr>
+              <th>[ID]</th>
+              <th>[ACTION]</th>
+              <th>[TARGET]</th>
+              <th>[LOG_DETAILS]</th>
+              <th>[TIMESTAMP]</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let log of auditLogs" [class.fraud-row]="log.actionType === 'FRAUD_DETECTED'">
+              <td class="term-id">{{ log.id }}</td>
+              <td>
+                <span class="term-action" [ngClass]="log.actionType.toLowerCase()">
+                  {{ log.actionType }}
+                </span>
+              </td>
+              <td class="term-target">{{ log.targetId }}</td>
+              <td class="term-details">{{ log.details }}</td>
+              <td class="term-time">{{ log.timestamp | date:'HH:mm:ss' }}</td>
+            </tr>
+            <tr *ngIf="auditLogs.length === 0">
+              <td colspan="5" class="term-empty">NO_LOGS_FOUND_IN_BUFFER...</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="terminal-footer">
+          <span class="prompt">></span> <span class="blink">_</span>
+        </div>
+      </div>
+    </div>
+  </div> <!-- /currentView === 'list' -->
+
+  <!-- VIEW: ADVANCED STATISTICS DASHBOARD -->
+  <div *ngIf="currentView === 'stats'" class="stats-dashboard">
+    <header class="top-header">
+      <div class="header-left">
+        <h1 class="page-title">Advanced Business Intelligence</h1>
+        <p class="page-subtitle">Vue d'ensemble analytique de la plateforme FlexBidaya</p>
+      </div>
+      <div class="header-right">
+        <button class="btn-primary" (click)="computeAdminStats()">
+          <i class="fas fa-sync"></i> Actualiser
+        </button>
+      </div>
+    </header>
+
+    <!-- KPI GRID -->
+    <div class="stats-kpi-grid">
+      <div class="kpi-card purple">
+        <div class="kpi-icon"><i class="fas fa-bullseye"></i></div>
+        <div class="kpi-data">
+          <span class="kpi-label">Total Opportunités</span>
+          <strong class="kpi-val">{{ adminStats.totalOpps }}</strong>
+        </div>
+        <div class="kpi-trend pos">+12% vs mois dernier</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-icon"><i class="fas fa-file-invoice"></i></div>
+        <div class="kpi-data">
+          <span class="kpi-label">Total Candidatures</span>
+          <strong class="kpi-val">{{ adminStats.totalCands }}</strong>
+        </div>
+        <div class="kpi-trend pos">+24% vs mois dernier</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-icon"><i class="fas fa-check-double"></i></div>
+        <div class="kpi-data">
+          <span class="kpi-label">Taux Conversion</span>
+          <strong class="kpi-val">{{ adminStats.conversionRate }}%</strong>
+        </div>
+        <div class="kpi-trend">Performance Optimale</div>
+      </div>
+      <div class="kpi-card gold">
+        <div class="kpi-icon"><i class="fas fa-shield-alt"></i></div>
+        <div class="kpi-data">
+          <span class="kpi-label">Santé Blockchain</span>
+          <strong class="kpi-val">{{ adminStats.integrityRate }}%</strong>
+        </div>
+        <div class="kpi-trend pos">Intégrité Garantie</div>
+      </div>
+    </div>
+
+    <!-- CHARTS SECTION -->
+    <div class="charts-row">
+      <!-- Circular Distribution (Opps by Type) -->
+      <div class="chart-container">
+        <h3 class="chart-title">Répartition des Opportunités</h3>
+        <div class="gauge-box">
+          <div class="circular-gauge">
+            <svg viewBox="0 0 100 100">
+              <circle class="g-bg" cx="50" cy="50" r="40"></circle>
+              <circle class="g-fill blue" cx="50" cy="50" r="40" [style.stroke-dashoffset]="251 - (adminStats.typeDist.concours / (adminStats.totalOpps || 1) * 251)"></circle>
+              <circle class="g-fill purple" cx="50" cy="50" r="32" [style.stroke-dashoffset]="201 - (adminStats.typeDist.financement / (adminStats.totalOpps || 1) * 201)"></circle>
+              <circle class="g-fill green" cx="50" cy="50" r="24" [style.stroke-dashoffset]="150 - (adminStats.typeDist.partenariat / (adminStats.totalOpps || 1) * 150)"></circle>
+            </svg>
+          </div>
+          <div class="gauge-legend">
+            <div class="leg-item blue"><span></span> Concours ({{ adminStats.typeDist.concours }})</div>
+            <div class="leg-item purple"><span></span> Financement ({{ adminStats.typeDist.financement }})</div>
+            <div class="leg-item green"><span></span> Partenariat ({{ adminStats.typeDist.partenariat }})</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Line Chart (Real Data) -->
+      <div class="chart-container">
+        <div class="chart-header-flex">
+          <h3 class="chart-title"><i class="fas fa-chart-line"></i> Tendance de l'Activité</h3>
+          <span class="badge-live">LIVE ANALYTICS</span>
+        </div>
+        
+        <div class="line-chart-box">
+          <svg viewBox="0 0 400 180" class="line-svg">
+            <!-- Background Grids -->
+            <line x1="0" y1="40" x2="400" y2="40" stroke="#f1f5f9" />
+            <line x1="0" y1="90" x2="400" y2="90" stroke="#f1f5f9" />
+            <line x1="0" y1="140" x2="400" y2="140" stroke="#f1f5f9" />
+
+            <!-- The Line Path -->
+            <path class="chart-line-path" 
+              [attr.d]="'M 0,180 L 0,' + (160 - adminStats.monthlyActivity[0].val) + 
+                        ' L 80,' + (160 - adminStats.monthlyActivity[1].val) + 
+                        ' L 160,' + (160 - adminStats.monthlyActivity[2].val) + 
+                        ' L 240,' + (160 - adminStats.monthlyActivity[3].val) + 
+                        ' L 320,' + (160 - adminStats.monthlyActivity[4].val) + 
+                        ' L 400,' + (160 - adminStats.monthlyActivity[5].val)"></path>
+            
+            <!-- Data Points -->
+            <circle *ngFor="let m of adminStats.monthlyActivity; let i = index" 
+              [attr.cx]="i * 80" 
+              [attr.cy]="160 - m.val" 
+              r="6" 
+              class="chart-dot"
+              (click)="getMonthExplanation(m)"
+              [class.selected]="selectedMonth === m">
+            </circle>
+
+            <!-- Numbers above dots -->
+            <text *ngFor="let m of adminStats.monthlyActivity; let i = index"
+              [attr.x]="i * 80"
+              [attr.y]="145 - m.val"
+              text-anchor="middle"
+              class="chart-text-val">{{ m.count }}</text>
+          </svg>
+          
+          <div class="line-labels">
+            <span *ngFor="let m of adminStats.monthlyActivity" (click)="getMonthExplanation(m)">{{ m.month }}</span>
+          </div>
+        </div>
+
+        <!-- Interactive Explanation Box -->
+        <div class="explanation-box" *ngIf="selectedMonth" animation="fadeIn">
+          <div class="exp-icon"><i class="fas fa-lightbulb"></i></div>
+          <div class="exp-content">
+            <h4>Analyse de {{ selectedMonth.month }}</h4>
+            <p>
+              Durant ce mois, la plateforme a enregistré <strong>{{ selectedMonth.count }}</strong> nouvelles candidatures.
+              <span *ngIf="selectedMonth.count > 0">
+                Cela démontre une dynamique positive et un intérêt croissant pour les opportunités publiées. 
+                Le taux de complétion des dossiers est estimé à 85%.
+              </span>
+              <span *ngIf="selectedMonth.count === 0">
+                Aucune activité enregistrée ce mois-ci. Nous recommandons de booster la visibilité des opportunités via les réseaux sociaux.
+              </span>
+            </p>
+          </div>
+          <button class="close-exp" (click)="selectedMonth = null">&times;</button>
+        </div>
+        
+        <p class="chart-footer" *ngIf="!selectedMonth">Cliquez sur un point pour obtenir une explication détaillée</p>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <!-- Status Funnel -->
+      <div class="chart-container full">
+        <h3 class="chart-title">Entonnoir de Conversion des Candidatures</h3>
+        <div class="funnel-viz">
+          <div class="funnel-step" [style.width.%]="100">
+            <div class="f-box gray">
+              <span class="f-label">Candidatures Soumises</span>
+              <strong class="f-val">{{ adminStats.totalCands }}</strong>
+            </div>
+          </div>
+          <div class="funnel-step" [style.width.%]="80">
+            <div class="f-box blue">
+              <span class="f-label">En Attente / Traitement</span>
+              <strong class="f-val">{{ adminStats.statusDist.attente }}</strong>
+            </div>
+          </div>
+          <div class="funnel-step" [style.width.%]="40">
+            <div class="f-box green">
+              <span class="f-label">Acceptations Finales</span>
+              <strong class="f-val">{{ adminStats.statusDist.acceptee }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STRATEGIC PERFORMANCE MATRIX (NON-AI ADVANCED FEATURE) -->
+    <div class="charts-row">
+      <div class="chart-container full">
+        <div class="chart-header-flex">
+          <h3 class="chart-title"><i class="fas fa-layer-group"></i> Matrice de Performance du Vivier</h3>
+          <span class="badge-live">DATA-DRIVEN LOGIC</span>
+        </div>
+        
+        <div class="radar-layout">
+          <!-- SVG Radar Chart -->
+          <div class="radar-viz">
+            <svg viewBox="0 0 200 200" class="radar-svg">
+              <polygon points="100,20 180,80 150,170 50,170 20,80" class="radar-grid" />
+              <polygon points="100,60 140,90 125,135 75,135 60,90" class="radar-grid" />
+              
+              <!-- Axes -->
+              <line x1="100" y1="100" x2="100" y2="20" class="radar-axis" />
+              <line x1="100" y1="100" x2="180" y2="80" class="radar-axis" />
+              <line x1="100" y1="100" x2="150" y2="170" class="radar-axis" />
+              <line x1="100" y1="100" x2="50" y2="170" class="radar-axis" />
+              <line x1="100" y1="100" x2="20" y2="80" class="radar-axis" />
+
+              <polygon [attr.points]="adminStats.performanceMatrix[0].x + ',' + adminStats.performanceMatrix[0].y + ' ' + 
+                                     adminStats.performanceMatrix[1].x + ',' + adminStats.performanceMatrix[1].y + ' ' + 
+                                     adminStats.performanceMatrix[2].x + ',' + adminStats.performanceMatrix[2].y + ' ' + 
+                                     adminStats.performanceMatrix[3].x + ',' + adminStats.performanceMatrix[3].y + ' ' + 
+                                     adminStats.performanceMatrix[4].x + ',' + adminStats.performanceMatrix[4].y" 
+                       class="radar-poly" />
+              
+              <circle *ngFor="let p of adminStats.performanceMatrix" [attr.cx]="p.x" [attr.cy]="p.y" r="4" class="radar-point" />
+            </svg>
+          </div>
+
+          <div class="radar-legend">
+            <div class="radar-stat" *ngFor="let s of adminStats.performanceMatrix">
+              <span class="rs-label">{{ s.label }}</span>
+              <div class="rs-bar-wrap">
+                <div class="rs-bar-fill" [style.width.%]="s.val"></div>
+              </div>
+              <span class="rs-val">{{ s.val }}%</span>
+            </div>
+
+            <div class="radar-insight">
+              <div class="insight-header"><i class="fas fa-microchip"></i> LOGIQUE ANALYTIQUE SYSTÈME</div>
+              <p>L'analyse structurelle indique une forte concentration sur l'indice <strong>{{ adminStats.performanceMatrix[0].label }}</strong>. 
+                 La moyenne globale de conformité système est de <strong>{{ adminStats.performanceMatrix[4].val }}%</strong>.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div> <!-- /currentView === 'stats' -->
+</main>
+</div>
+
+<!-- ============================================ -->
+<!-- BLOCKCHAIN DIGITAL PASSPORT MODAL (ADMIN)   -->
+<!-- ============================================ -->
+<div class="ats-overlay" *ngIf="showAtsPreview" (click)="showAtsPreview = false; atsVerifying = false;">
+  <div class="ats-console" (click)="$event.stopPropagation()">
+    <div class="ats-header">
+      <span><i class="fas fa-certificate"></i> PASSEPORT DIGITAL BLOCKCHAIN v1.0</span>
+      <button (click)="showAtsPreview=false">&times;</button>
+    </div>
+    <div class="ats-body">
+      <!-- Cryptographic verification animation -->
+      <div class="ats-verifying" *ngIf="atsVerifying">
+         <div class="ats-spinner"></div>
+         <p>VÉRIFICATION DE L'EMPREINTE CRYPTOGRAPHIQUE...</p>
+         <small>Data Hash: {{ passportHashToVerify }}</small>
+      </div>
+
+      <div class="ats-content" *ngIf="!atsVerifying && scannedCandidate">
+        <div class="ats-log">
+          <p>> Initialisation du protocole de preuve à divulgation nulle...</p>
+          <p>> Empreinte Blockchain : <span class="text-success">{{ passportHashToVerify }}</span></p>
+          
+          <ng-container *ngIf="scannedCandidate.blockchainStatus === 'CERTIFIED'">
+            <p class="text-success">> STATUT INTÉGRITÉ : AUTHENTIQUE. Certifié par le nœud principal.</p>
+          </ng-container>
+          <ng-container *ngIf="scannedCandidate.blockchainStatus !== 'CERTIFIED'">
+            <p class="text-danger">> ALERTE FRAUDE : INTÉGRITÉ COMPROMISE !</p>
+          </ng-container>
+        </div>
+        
+        <div class="passport-display">
+          <div class="passport-qr">
+             <!-- Simulated QR Code (Custom SVG) -->
+             <svg width="100" height="100" viewBox="0 0 100 100">
+               <rect width="100" height="100" fill="white"/>
+               <rect x="10" y="10" width="20" height="20" fill="#1e293b"/>
+               <rect x="70" y="10" width="20" height="20" fill="#1e293b"/>
+               <rect x="10" y="70" width="20" height="20" fill="#1e293b"/>
+               <rect x="40" y="40" width="20" height="20" fill="#6366f1"/>
+               <rect x="50" y="10" width="10" height="10" fill="#1e293b"/>
+               <rect x="10" y="50" width="10" height="10" fill="#1e293b"/>
+               <rect x="70" y="50" width="10" height="10" fill="#1e293b"/>
+             </svg>
+             <small>SCAN ID: {{ scannedCandidate.id }}</small>
+          </div>
+          
+          <table class="ats-table">
+            <thead>
+              <tr>
+                <th>Paramètre de Confiance</th>
+                <th>Validation</th>
+                <th>Détails Système</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Analyse de Conformité</td>
+                <td>
+                  <span class="badge-verified" *ngIf="scannedCandidate.scoreIA >= 60">VALIDE ({{ scannedCandidate.scoreIA }}%)</span>
+                  <span class="badge-verified" style="background: rgba(239, 68, 68, 0.2); color: #ef4444;" *ngIf="scannedCandidate.scoreIA < 60">NON-CONFORME</span>
+                </td>
+                <td>Moteur de Matching Local</td>
+              </tr>
+              <tr class="highlight">
+                <td>Intégrité Blockchain</td>
+                <td>
+                  <span class="badge-verified" *ngIf="scannedCandidate.blockchainStatus === 'CERTIFIED'">CERTIFIÉ</span>
+                  <span class="badge-verified" style="background: rgba(239, 68, 68, 0.2); color: #ef4444;" *ngIf="scannedCandidate.blockchainStatus !== 'CERTIFIED'">SUSPECT</span>
+                </td>
+                <td>Preuve d'Existence (Hash)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

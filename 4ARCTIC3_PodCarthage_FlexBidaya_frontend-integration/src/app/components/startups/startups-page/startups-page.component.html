@@ -1,0 +1,252 @@
+<div class="page-wrapper">
+  
+  <app-sidebar></app-sidebar>
+
+  <div class="content-container">
+    <app-topnav></app-topnav>
+
+    <div class="main-content">
+      <!-- GREETING -->
+      <div class="greeting">
+        <h2>Hello, {{ currentUsername }} <span>👋</span></h2>
+        <p>Here is a summary of your activity today</p>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn" [class.active]="activeTab === 'startups'" (click)="setTab('startups')">Startups View</button>
+        <button class="tab-btn" [class.active]="activeTab === 'performance'" (click)="setTab('performance')">Member Performance</button>
+        <button class="tab-btn" [class.active]="activeTab === 'simulation'" (click)="setTab('simulation')">Simulation Financière</button>
+      </div>
+
+      <ng-container *ngIf="activeTab === 'startups'">
+        <!-- STATS -->
+        <app-stat-cards></app-stat-cards>
+
+        <!-- RECENT STARTUPS -->
+        <div class="section-header">
+          <div>
+            <h3>Recent Startups</h3>
+            <p>Quick overview of your startups</p>
+          </div>
+          <button class="btn-new" (click)="addModal.open()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New startup
+          </button>
+        </div>
+
+        <app-startup-cards (edit)="onOpenEditModal($event)"></app-startup-cards>
+
+        <!-- MANAGEMENT TABLE -->
+        <div class="section-header" style="margin-top:8px">
+          <div>
+            <h3>Startup Management</h3>
+            <p>Approve, reject or put startups on hold</p>
+          </div>
+        </div>
+
+        <app-startup-table (viewDetails)="onViewDetails($event)" (viewGrowth)="onViewGrowth($event)" (edit)="onOpenEditModal($event)"></app-startup-table>
+      </ng-container>
+
+      <ng-container *ngIf="activeTab === 'performance'">
+        <div class="section-header">
+          <div>
+            <h3>Member Performance</h3>
+            <p>Measure engagement and quality of BMC contributions</p>
+          </div>
+          <select class="startup-select" [(ngModel)]="selectedStartupId">
+            <option [ngValue]="null">Select startup</option>
+            <option *ngFor="let s of myStartups" [ngValue]="s.id">{{ s.nom }}</option>
+          </select>
+        </div>
+        <app-membre-performance [startupId]="selectedStartupId"></app-membre-performance>
+      </ng-container>
+
+      <ng-container *ngIf="activeTab === 'simulation'">
+        <app-financial-simulation></app-financial-simulation>
+      </ng-container>
+
+    </div><!-- end main-content -->
+  </div><!-- end content-container -->
+</div><!-- end page-wrapper -->
+
+<!-- MODALS -->
+<app-add-startup-modal #addModal></app-add-startup-modal>
+<app-status-modal #statusModal></app-status-modal>
+<app-edit-startup-modal [startup]="selectedStartupToEdit" (closed)="onCloseEditModal()"></app-edit-startup-modal>
+<app-toast></app-toast>
+
+<!-- DETAILS MODAL -->
+<div class="details-modal-overlay" *ngIf="selectedStartupForDetails" (click)="closeDetailsModal()">
+  <div class="details-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">
+        <div class="modal-logo" [style.backgroundColor]="selectedStartupForDetails.nom.length % 2 === 0 ? '#8b5cf6' : '#10b981'">
+          {{ selectedStartupForDetails.nom.charAt(0) | uppercase }}
+        </div>
+        <div>
+          <h3>{{ selectedStartupForDetails.nom }}</h3>
+          <p>{{ selectedStartupForDetails.secteur }} · {{ selectedStartupForDetails.stade }}</p>
+        </div>
+      </div>
+      <button class="close-btn" (click)="closeDetailsModal()">×</button>
+    </div>
+
+    <div class="modal-tabs">
+      <div class="tab-scroll">
+        <div class="bmc-preview" *ngIf="selectedBmc">
+          <h4>Business Model Canvas</h4>
+          <div class="bmc-mini-grid">
+            <div class="bmc-item p-keys"><h5>Partners</h5><p>{{ selectedBmc.partenairesCles || 'No data' }}</p></div>
+            <div class="bmc-item a-keys"><h5>Activities</h5><p>{{ selectedBmc.activitesCles || 'No data' }}</p></div>
+            <div class="bmc-item r-keys"><h5>Resources</h5><p>{{ selectedBmc.ressourcesCles || 'No data' }}</p></div>
+            <div class="bmc-item v-prop"><h5>Value Prop</h5><p>{{ selectedBmc.propositionValeurs || 'No data' }}</p></div>
+            <div class="bmc-item c-rel"><h5>Relationships</h5><p>{{ selectedBmc.relationsClients || 'No data' }}</p></div>
+            <div class="bmc-item channels"><h5>Channels</h5><p>{{ selectedBmc.canauxDistribution || 'No data' }}</p></div>
+            <div class="bmc-item c-seg"><h5>Segments</h5><p>{{ selectedBmc.segmentsClients || 'No data' }}</p></div>
+            <div class="bmc-item costs"><h5>Costs</h5><p>{{ selectedBmc.structuresCouts || 'No data' }}</p></div>
+            <div class="bmc-item revs"><h5>Revenues</h5><p>{{ selectedBmc.fluxRevenus || 'No data' }}</p></div>
+          </div>
+        </div>
+        <div class="bmc-no-data" *ngIf="!selectedBmc">No BMC defined for this startup yet.</div>
+
+        <div class="details-section">
+          <h4>Team Members ({{ selectedStartupForDetails.membres?.length || 0 }})</h4>
+          <div class="members-list">
+            <div class="member-item" *ngFor="let m of selectedStartupForDetails.membres">
+              <div class="m-avatar">{{ m.nomPrenom.charAt(0) | uppercase }}</div>
+              <div class="m-info">
+                <strong>{{ m.nomPrenom }}</strong>
+                <span>{{ m.email }} · {{ m.role }}</span>
+              </div>
+            </div>
+            <div class="bmc-no-data" *ngIf="!selectedStartupForDetails.membres || selectedStartupForDetails.membres.length === 0">No members.</div>
+          </div>
+        </div>
+
+        <div class="details-section">
+          <h4>Financial Credits ({{ selectedStartupForDetails.credits?.length || 0 }})</h4>
+          <div class="credits-list">
+            <div class="credit-item" *ngFor="let c of selectedStartupForDetails.credits">
+              <div class="c-icon">🏦</div>
+              <div class="c-info">
+                <strong>{{ c.source }}</strong>
+                <span>{{ c.montant | number:'1.0-0' }} TND · {{ c.tauxInteret }}% · {{ c.dureeMois }} months</span>
+              </div>
+            </div>
+            <div class="bmc-no-data" *ngIf="!selectedStartupForDetails.credits || selectedStartupForDetails.credits.length === 0">No credits.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GROWTH MODAL -->
+<div class="details-modal-overlay" *ngIf="selectedStartupForGrowth" (click)="closeGrowthModal()">
+  <div class="details-modal growth-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">
+        <div class="modal-logo" [style.backgroundColor]="selectedStartupForGrowth.nom.length % 2 === 0 ? '#8b5cf6' : '#10b981'">
+          {{ selectedStartupForGrowth.nom.charAt(0) | uppercase }}
+        </div>
+        <div>
+          <h3>{{ selectedStartupForGrowth.nom }} Growth</h3>
+          <p>Performance metrics over the last 6 months</p>
+        </div>
+      </div>
+      <button class="close-btn" (click)="closeGrowthModal()">×</button>
+    </div>
+
+    <div class="modal-tabs">
+      <div class="tab-scroll">
+        
+        <!-- MRR GROWTH CHART (Line Chart) -->
+        <div class="details-section">
+          <h4>Monthly Recurring Revenue (MRR) Growth</h4>
+          <div class="chart-container">
+            <svg class="growth-chart" viewBox="0 0 600 200" preserveAspectRatio="none">
+              <!-- Grid lines -->
+              <line x1="0" y1="200" x2="600" y2="200" stroke="#e2e8f0" stroke-width="1" />
+              <line x1="0" y1="150" x2="600" y2="150" stroke="#f1f5f9" stroke-width="1" />
+              <line x1="0" y1="100" x2="600" y2="100" stroke="#f1f5f9" stroke-width="1" />
+              <line x1="0" y1="50" x2="600" y2="50" stroke="#f1f5f9" stroke-width="1" />
+              <line x1="0" y1="0" x2="600" y2="0" stroke="#f1f5f9" stroke-width="1" />
+              
+              <!-- Line path -->
+              <path [attr.d]="'M 50 ' + (200 - (growthData.mrr[0] / growthData.maxMrr * 180)) + 
+                             ' L 150 ' + (200 - (growthData.mrr[1] / growthData.maxMrr * 180)) + 
+                             ' L 250 ' + (200 - (growthData.mrr[2] / growthData.maxMrr * 180)) + 
+                             ' L 350 ' + (200 - (growthData.mrr[3] / growthData.maxMrr * 180)) + 
+                             ' L 450 ' + (200 - (growthData.mrr[4] / growthData.maxMrr * 180)) + 
+                             ' L 550 ' + (200 - (growthData.mrr[5] / growthData.maxMrr * 180))" 
+                    fill="none" stroke="#10b981" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+              
+              <!-- Points -->
+              <circle cx="50" [attr.cy]="200 - (growthData.mrr[0] / growthData.maxMrr * 180)" r="6" fill="#10b981" stroke="white" stroke-width="2"/>
+              <circle cx="150" [attr.cy]="200 - (growthData.mrr[1] / growthData.maxMrr * 180)" r="6" fill="#10b981" stroke="white" stroke-width="2"/>
+              <circle cx="250" [attr.cy]="200 - (growthData.mrr[2] / growthData.maxMrr * 180)" r="6" fill="#10b981" stroke="white" stroke-width="2"/>
+              <circle cx="350" [attr.cy]="200 - (growthData.mrr[3] / growthData.maxMrr * 180)" r="6" fill="#10b981" stroke="white" stroke-width="2"/>
+              <circle cx="450" [attr.cy]="200 - (growthData.mrr[4] / growthData.maxMrr * 180)" r="6" fill="#10b981" stroke="white" stroke-width="2"/>
+              <circle cx="550" [attr.cy]="200 - (growthData.mrr[5] / growthData.maxMrr * 180)" r="6" fill="#10b981" stroke="white" stroke-width="2"/>
+            </svg>
+            <div class="chart-labels x-axis">
+              <span *ngFor="let month of growthData.months">{{ month }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECOND ROW: MEMBER GROWTH & HEALTH SCORE -->
+        <div class="growth-row">
+          <!-- MEMBER GROWTH CHART (Bar Chart) -->
+          <div class="details-section flex-1">
+            <h4>Team Expansion</h4>
+            <div class="chart-container">
+              <svg class="growth-chart" viewBox="0 0 600 200" preserveAspectRatio="none">
+                <line x1="0" y1="200" x2="600" y2="200" stroke="#e2e8f0" stroke-width="1" />
+                
+                <g *ngFor="let m of growthData.members; let i = index">
+                  <rect [attr.x]="30 + (i * 100)" 
+                        [attr.y]="200 - (m / growthData.maxMember * 150)" 
+                        width="40" 
+                        [attr.height]="m / growthData.maxMember * 150" 
+                        fill="#3b82f6" rx="4" ry="4" />
+                  <text [attr.x]="50 + (i * 100)" 
+                        [attr.y]="190 - (m / growthData.maxMember * 150)" 
+                        text-anchor="middle" font-size="12" font-weight="600" fill="#0f172a">{{ m }}</text>
+                </g>
+              </svg>
+              <div class="chart-labels x-axis">
+                <span *ngFor="let month of growthData.months">{{ month }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CIRCULAR HEALTH SCORE -->
+          <div class="details-section flex-1">
+            <h4>Overall Health Score</h4>
+            <div class="chart-container circular-container">
+              <div class="circular-chart">
+                <svg viewBox="0 0 36 36" class="circular-svg">
+                  <path class="circle-bg"
+                    d="M18 2.0845
+                      a 15.9155 15.9155 0 0 1 0 31.831
+                      a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  <path class="circle"
+                    [attr.stroke-dasharray]="growthData.healthScore + ', 100'"
+                    d="M18 2.0845
+                      a 15.9155 15.9155 0 0 1 0 31.831
+                      a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  <text x="18" y="20.35" class="percentage">{{ growthData.healthScore }}%</text>
+                </svg>
+              </div>
+              <p class="health-label">Based on MRR growth, team size, and BMC completion.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>

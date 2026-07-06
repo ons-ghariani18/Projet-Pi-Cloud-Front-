@@ -1,0 +1,397 @@
+<div class="profile-container">
+  <!-- Background animé -->
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="grid-bg"></div>
+
+  <!-- Header du profil -->
+  <div class="profile-header">
+    <button class="back-to-feed-btn" (click)="goBack()">
+      <span class="icon">←</span>
+      <span class="text">News Feed</span>
+    </button>
+
+    <button class="notification-btn" (click)="viewNotifications()">
+      <span class="notification-icon">🔔</span>
+      <span class="notification-badge" *ngIf="unreadNotificationCount > 0">{{ unreadNotificationCount }}</span>
+    </button>
+
+    <div class="profile-cover">
+      <div class="profile-info">
+        <div class="profile-avatar">
+          <img
+            *ngIf="currentUser?.profileImage"
+            class="avatar-circle large"
+            [src]="currentUser?.profileImage"
+            [alt]="currentUser?.username"
+          />
+          <span *ngIf="!currentUser?.profileImage" class="avatar-circle large">
+            {{ getAvatarLetter(currentUser?.username) }}
+          </span>
+        </div>
+        <div class="profile-details">
+          <h1 class="profile-name">{{ currentUser?.username || 'User' }}</h1>
+          <p class="profile-role">{{ formatRoles(currentUser?.roles) }}</p>
+          <button class="edit-profile-btn" (click)="editProfile()" *ngIf="isOwnProfile">
+            <span>Edit Profile</span>
+          </button>
+
+          <!-- Actions pour les profils tiers -->
+          <div class="profile-actions" *ngIf="!isOwnProfile">
+            <ng-container *ngIf="isFriend()">
+              <button class="action-btn message-btn" (click)="goToChat()">
+                <span>💬 Send Message</span>
+              </button>
+              <button class="action-btn remove-btn" (click)="removeFriend()">
+                <span>🗑️ Remove Friend</span>
+              </button>
+            </ng-container>
+
+            <button class="action-btn invite-btn" (click)="sendInvite()" *ngIf="!isFriend()" [disabled]="invitationSent">
+              <span>{{ invitationSent ? '✓ Invitation Sent' : '👥 Send Invitation' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenu principal -->
+  <div class="profile-content">
+    <!-- Statistiques -->
+    <div class="stats-section">
+      <h2>Statistics</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">Posts</div>
+          <div class="stat-number">{{ userStats.totalPosts }}</div>
+          <div class="stat-label">Posts</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">Comments</div>
+          <div class="stat-number">{{ userStats.totalComments }}</div>
+          <div class="stat-label">Comments</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">Likes</div>
+          <div class="stat-number">{{ userStats.totalLikes }}</div>
+          <div class="stat-label">Likes</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Publications de l'utilisateur -->
+    <div class="posts-section">
+      <h2>{{ isOwnProfile ? 'My Posts' : 'Posts' }}</h2>
+      
+      <!-- Loading -->
+      <div class="loading" *ngIf="loading">
+        <div class="loading-spinner"></div>
+        <div>Loading posts...</div>
+      </div>
+
+      <!-- Message d'erreur -->
+      <div class="error-message" *ngIf="error">
+        <p>{{ error }}</p>
+      </div>
+
+      <!-- Liste des publications -->
+      <div class="posts-list" *ngIf="!loading && !error">
+        <div class="post-card" *ngFor="let post of userPosts" [class.shared-post]="post.shared">
+          <!-- Indicateur de partage -->
+          <div class="shared-indicator" *ngIf="post.shared && post.originalUsername">
+            <span class="share-icon">📤</span>
+            <span class="share-text">
+              <strong>{{ post.username }}</strong> shared <strong>{{ post.originalUsername }}</strong>'s post
+            </span>
+          </div>
+          
+          <div class="post-header">
+            <div class="post-author">
+              <div class="author-avatar-container">
+                <img *ngIf="post.userProfileImage" class="author-avatar-img" [src]="post.userProfileImage" [alt]="post.username" />
+                <div *ngIf="!post.userProfileImage" class="author-avatar-placeholder">
+                  {{ getAvatarLetter(post.username) }}
+                </div>
+              </div>
+              <div class="author-info">
+                <div class="author-name">{{ post.username || 'Anonyme' }}</div>
+                <div class="post-date">{{ formatDate(post.dateCreation) }}</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="post-content">
+            <h3 class="post-title" *ngIf="post.titre && post.titre !== 'Publication'">{{ post.titre }}</h3>
+            <p class="post-text">{{ post.contenu }}</p>
+            
+            <!-- Affichage de la localisation si présente -->
+            <div class="post-location-tag" *ngIf="post.latitude && post.longitude" (click)="openInGoogleMaps(post.latitude + ',' + post.longitude)">
+              📍 <span class="location-link">View Location</span>
+            </div>
+            
+            <!-- Affichage de la photo/vidéo si présente -->
+            <div *ngIf="post.mediaUrl" class="post-media">
+              <img *ngIf="post.mediaType === 'image'" [src]="post.mediaUrl" alt="Media" class="post-image">
+              <video *ngIf="post.mediaType === 'video'" [src]="post.mediaUrl" controls class="post-video"></video>
+            </div>
+          </div>
+          
+          <div class="post-stats">
+            <div class="post-stat"
+                 (mouseenter)="showReactionMenu(post.id)"
+                 (mouseleave)="hideReactionMenu()">
+              <button class="like-btn" (click)="toggleReactionMenu(post.id)" [class.active]="post.userReaction">
+                <span>{{ getReactionEmoji(post.userReaction || 'LIKE') }}</span>
+                <span class="reaction-count">{{ getTotalReactionCount(post) }}</span>
+              </button>
+
+              <!-- Menu des réactions -->
+              <div class="reaction-menu show" *ngIf="reactionMenuPostId === post.id && showReactionMenuFlag">
+                <button class="reaction-option" (click)="reactToPost(post.id, 'LIKE')" [class.selected]="post.userReaction === 'LIKE'">
+                  <span>👍</span>
+                  <span>Like</span>
+                </button>
+                <button class="reaction-option" (click)="reactToPost(post.id, 'DISLIKE')" [class.selected]="post.userReaction === 'DISLIKE'">
+                  <span>👎</span>
+                  <span>Dislike</span>
+                </button>
+                <button class="reaction-option" (click)="reactToPost(post.id, 'LOVE')" [class.selected]="post.userReaction === 'LOVE'">
+                  <span>❤️</span>
+                  <span>Love</span>
+                </button>
+              </div>
+            </div>
+            <div class="post-stat">
+              <button class="comment-btn" (click)="openComments(post.id)">
+                <span>💬</span>
+                <span>{{ post.comments?.length || 0 }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Section des commentaires -->
+          <div class="comments-section" *ngIf="post.showComments">
+            <div class="comment-form">
+              <div class="comment-avatar">
+                <span class="avatar-circle">{{ getAvatarLetter(currentUser?.username) || '?' }}</span>
+              </div>
+              <textarea
+                class="comment-input"
+                [(ngModel)]="newCommentContent[post.id]"
+                placeholder="Write a comment..."
+                rows="1"
+                maxlength="500">
+              </textarea>
+              <button class="comment-submit-btn" (click)="addComment(post.id, newCommentContent[post.id])" [disabled]="!(newCommentContent[post.id] || '').trim()">
+                Comment
+              </button>
+            </div>
+
+            <div class="comments-list" *ngIf="post.comments && post.comments.length > 0">
+              <div class="comment-item" *ngFor="let comment of post.comments">
+                <div class="comment-avatar">
+                  <span class="avatar-circle small">{{ getAvatarLetter(comment.username) }}</span>
+                </div>
+                <div class="comment-content">
+                  <div class="comment-header">
+                    <span class="comment-username">{{ comment.username }}</span>
+                    <span class="comment-date">{{ formatDate(comment.date) }}</span>
+                  </div>
+                  <div class="comment-text">{{ comment.contenu }}</div>
+                  <div class="comment-footer">
+                    <button class="comment-like-btn" (click)="reactToComment(comment.id, 'LIKE')" [class.liked]="comment.userReaction === 'LIKE'">
+                      <span>❤️</span>
+                      <span>{{ comment.likeCount || 0 }}</span>
+                    </button>
+                    <button class="comment-reply-btn" (click)="toggleReplyForm(comment.id)">
+                      <span>💬</span>
+                      <span>Reply</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Formulaire de réponse -->
+                <div class="reply-form" *ngIf="showReplyForm === comment.id">
+                  <div class="reply-input-container">
+                    <div class="reply-avatar">
+                      <span class="avatar-circle small">{{ getAvatarLetter(currentUser?.username) || '?' }}</span>
+                    </div>
+                    <div class="reply-input-wrapper">
+                      <textarea
+                        class="reply-input"
+                        [(ngModel)]="replyContent[comment.id]"
+                        placeholder="Write a reply..."
+                        rows="2"
+                        maxlength="500">
+                      </textarea>
+                      <div class="reply-actions">
+                        <button class="reply-cancel-btn" (click)="cancelReply(comment.id)">
+                          Cancel
+                        </button>
+                        <button class="reply-submit-btn"
+                                [disabled]="!(replyContent[comment.id] || '').trim()"
+                                (click)="replyToComment(comment.id)">
+                          <span>📤</span> Reply
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Afficher les réponses imbriquées -->
+                <div class="replies-container" *ngIf="comment.replies && comment.replies.length > 0">
+                  <div class="comment-item reply-item" *ngFor="let reply of comment.replies">
+                    <div class="reply-indicator">
+                      <span class="reply-arrow">↳</span>
+                    </div>
+                    <div class="comment-avatar">
+                      <span class="avatar-circle small">
+                        {{ getAvatarLetter(reply.username) }}
+                      </span>
+                    </div>
+                    <div class="comment-content">
+                      <div class="comment-header">
+                        <span class="comment-username">{{ reply.username }}</span>
+                        <span class="comment-date">{{ formatDate(reply.date) }}</span>
+                      </div>
+                      <div class="comment-text">{{ reply.contenu }}</div>
+                      <div class="comment-footer">
+                        <button class="comment-like-btn" (click)="reactToComment(reply.id, 'LIKE')" [class.liked]="reply.userReaction === 'LIKE'">
+                          <span>❤️</span>
+                          <span>{{ reply.likeCount || 0 }}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Message si aucune publication -->
+      <div class="no-posts" *ngIf="!loading && !error && userPosts.length === 0">
+        <div class="no-posts-icon">No posts yet</div>
+        <div class="no-posts-text">No posts for now</div>
+        <div class="no-posts-sub">Start sharing your thoughts!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal d'édition de profil -->
+  <app-edit-profile 
+    *ngIf="showEditProfile"
+    (profileUpdated)="onProfileUpdated($event)"
+    (closeEditProfile)="closeEditProfile()"
+  ></app-edit-profile>
+
+  <!-- Modal des notifications -->
+  <div class="notifications-modal" *ngIf="showNotifications" (click)="viewNotifications()">
+    <div class="notifications-content" (click)="$event.stopPropagation()">
+      <div class="notifications-header">
+        <h3>Notifications</h3>
+        <button class="close-btn" (click)="viewNotifications()">×</button>
+      </div>
+
+      <div class="notifications-toolbar">
+        <button class="mark-all-btn"
+                *ngIf="notifications.length > 0 && unreadNotificationCount > 0"
+                (click)="markAllNotificationsAsRead()">
+          Mark all as read
+        </button>
+      </div>
+
+      <div *ngIf="notificationsError" class="empty-message">{{ notificationsError }}</div>
+
+      <div class="notifications-list" *ngIf="!notificationsError && notifications.length > 0">
+        <div class="notification-card"
+             *ngFor="let notification of notifications"
+             [class.unread]="!notification.read">
+          <div class="notification-avatar">
+            <img *ngIf="notification.actorProfileImage" [src]="notification.actorProfileImage" [alt]="notification.actorUsername || 'User'" />
+            <span *ngIf="!notification.actorProfileImage">{{ (notification.actorUsername || 'U').charAt(0).toUpperCase() }}</span>
+          </div>
+
+          <div class="notification-content">
+            <div class="notification-topline">
+              <span class="notification-icon">{{ getNotificationIcon(notification.type) }}</span>
+              <span class="notification-title">{{ notification.title }}</span>
+              <span class="notification-pill" *ngIf="!notification.read">New</span>
+            </div>
+            <div class="notification-text">{{ notification.content }}</div>
+          </div>
+
+          <div class="notification-meta">
+            <span class="notification-time">{{ notification.createdAt | date:'short' }}</span>
+            <button class="notification-read-btn"
+                    *ngIf="!notification.read"
+                    (click)="markNotificationAsRead(notification.id)">
+              Mark as read
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="empty-message" *ngIf="!notificationsError && notifications.length === 0">
+        No notifications for now.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chat Pop-up sur le profil -->
+<div class="profile-chat-container" *ngIf="showChat">
+  <div class="chat-popup">
+    <div class="chat-header">
+      <div class="friend-info">
+        <img *ngIf="currentUser?.profileImage" [src]="currentUser?.profileImage" class="chat-avatar">
+        <div *ngIf="!currentUser?.profileImage" class="chat-avatar-placeholder">
+          {{ getAvatarLetter(currentUser?.username) }}
+        </div>
+        <span class="chat-username">{{ currentUser?.username }}</span>
+      </div>
+      <button class="close-chat" (click)="closeChat()">×</button>
+    </div>
+
+    <div class="chat-messages">
+      <div class="empty-chat" *ngIf="messages.length === 0">
+        No messages. Send the first one!
+      </div>
+      
+      <div *ngFor="let msg of messages" class="message-row" [class.sent]="msg.senderId !== profileUserId">
+        <div class="message-bubble">
+          <!-- Texte -->
+          <p *ngIf="msg.content">{{ msg.content }}</p>
+          
+          <!-- Médias (Images, Vidéos, Audio) -->
+          <div class="message-media" *ngIf="msg.mediaUrl">
+            <img *ngIf="isImageMessage(msg)" [src]="msg.mediaUrl" class="chat-media-img">
+            <video *ngIf="isVideoMessage(msg)" [src]="msg.mediaUrl" controls class="chat-media-video"></video>
+            <audio *ngIf="isAudioMessage(msg)" [src]="msg.mediaUrl" controls class="chat-media-audio"></audio>
+          </div>
+
+          <span class="message-time">{{ formatDate(msg.timestamp) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-input-area">
+      <input 
+        type="text" 
+        [(ngModel)]="newMessage" 
+        (keyup.enter)="sendMessage()"
+        placeholder="Write your message..."
+        [disabled]="isSendingMessage"
+      >
+      <button class="send-btn" (click)="sendMessage()" [disabled]="isSendingMessage || !newMessage.trim()">
+        <span>➤</span>
+      </button>
+    </div>
+    <div class="chat-error" *ngIf="messagesError">{{ messagesError }}</div>
+  </div>
+</div>

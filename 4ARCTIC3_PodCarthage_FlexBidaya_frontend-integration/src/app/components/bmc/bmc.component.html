@@ -1,0 +1,414 @@
+<div class="page-wrapper">
+  
+  <app-sidebar></app-sidebar>
+
+  <div class="content-container">
+    <app-topnav></app-topnav>
+
+    <div class="main-content">
+      <div class="bmc-header">
+        <div class="header-left">
+          <h1>Business Model Canvas</h1>
+          <p>Définissez votre stratégie pour 
+            <select class="startup-select" [(ngModel)]="startupId" (ngModelChange)="onStartupChange()">
+              <option [ngValue]="null" disabled>Choose a startup...</option>
+              <option *ngFor="let s of allStartups" [ngValue]="s.id">{{s.nom}}</option>
+            </select>
+          </p>
+        </div>
+        
+        <!-- DASHBOARD TABS -->
+        <div class="dashboard-tabs">
+          <button [class.active]="activeTab === 'bmc'" (click)="activeTab = 'bmc'">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+            BMC
+          </button>
+          <button [class.active]="activeTab === 'membres'" (click)="activeTab = 'membres'">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Members
+          </button>
+          <button [class.active]="activeTab === 'versioning'" (click)="activeTab = 'versioning'">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            Versioning
+          </button>
+        </div>
+
+        <div class="bmc-actions" *ngIf="activeTab === 'bmc'">
+          <!-- PROGRESS BAR -->
+          <div class="progress-container">
+            <div class="progress-info">
+              <span>Business Plan Completion</span>
+              <span class="percentage">{{ getProgress() }}%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" [style.width.%]="getProgress()"></div>
+            </div>
+          </div>
+
+          <button class="btn-save-all" (click)="saveBmc()" [disabled]="isLoading">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+              <polyline points="17 21 17 13 7 13 7 21" />
+              <polyline points="7 3 7 8 15 8" />
+            </svg>
+            Save Changes
+          </button>
+
+          <button class="btn-ai" (click)="generateAiSuggestions()" [disabled]="aiLoading || !startupId">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+            AI Suggestions
+          </button>
+
+          <button class="btn-swot" (click)="openSwotModal()" [disabled]="swotLoading || !startupId">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+              <polyline points="7.5 4.21 12 6.81 16.5 4.21" />
+              <polyline points="7.5 19.79 7.5 14.63 3 12" />
+              <polyline points="21 12 16.5 14.63 16.5 19.79" />
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+              <line x1="12" y1="22.08" x2="12" y2="12" />
+            </svg>
+            SWOT Analysis
+          </button>
+        </div>
+      </div>
+
+
+      <div class="bmc-content-area">
+        <!-- TAB 1: BMC -->
+        <div class="bmc-grid" cdkDropListGroup *ngIf="activeTab === 'bmc'">
+          <div class="bmc-block" *ngFor="let block of blocks" 
+               [style.background]="block.color"
+               [style.color]="block.textColor"
+               [class]="block.id"
+               [ngClass]="{
+                 'block-live': activeBlocks[block.id]?.isTyping,
+                 'block-pending': activeBlocks[block.id]?.isPending
+               }">
+            
+            <!-- Badge membre actif -->
+            <div class="membre-presence" *ngIf="activeBlocks[block.id]">
+              <span class="presence-dot"></span>
+              {{ activeBlocks[block.id].membreNom }}
+              <span class="presence-status">
+                {{ activeBlocks[block.id].isTyping ? 'typing...' : 'Waiting' }}
+              </span>
+            </div>
+
+            <div class="block-header">
+              <span class="icon" (click)="openNoteModal(block.id)">{{block.icon}}</span>
+              <h3>{{block.title}}</h3>
+              <button class="add-btn" (click)="openNoteModal(block.id)">+</button>
+            </div>
+
+            <!-- Contenu existant du bloc -->
+            <p class="desc">{{block.desc}}</p>
+            <div class="notes" 
+                 cdkDropList
+                 [cdkDropListData]="block.notes"
+                 (cdkDropListDropped)="drop($event)">
+              <div class="note" *ngFor="let n of block.notes; let i = index" cdkDrag>
+                <div class="drag-handle" cdkDragHandle>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="opacity: 0.4">
+                    <circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/>
+                    <circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>
+                  </svg>
+                </div>
+                <span class="note-text" 
+                      contenteditable="true" 
+                      (click)="$event.stopPropagation()"
+                      (blur)="updateNote(block.id, i, $event)"
+                      (keydown.enter)="onEnter($event)">
+                  {{n}}
+                </span>
+                <span class="delete" (click)="$event.stopPropagation(); removeNote(block.id, i)">×</span>
+                <div class="drag-placeholder" *cdkDragPlaceholder></div>
+              </div>
+            </div>
+
+
+            <!-- ZONE DE COLLABORATION TEMPS RÉEL -->
+            <div class="live-suggestion" *ngIf="activeBlocks[block.id] && (activeBlocks[block.id].typingText || activeBlocks[block.id].isTyping || activeBlocks[block.id].isPending)">
+              <div class="suggestion-content">
+                <span class="suggestion-label" *ngIf="activeBlocks[block.id].isPending">PROPOSAL</span>
+                <span class="suggestion-text">
+                  {{ activeBlocks[block.id].typingText || (activeBlocks[block.id].isTyping ? '...' : '') }}
+                  <span class="cursor-blink" *ngIf="activeBlocks[block.id].isTyping">|</span>
+                </span>
+              </div>
+
+              <div class="block-actions" *ngIf="activeBlocks[block.id].isPending && activeBlocks[block.id].proposalId">
+                <button class="btn-approve-inline" (click)="onApprove(activeBlocks[block.id].proposalId!, block.id)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+                  Approve
+                </button>
+                <button class="btn-reject-inline" (click)="onReject(activeBlocks[block.id].proposalId!, block.id)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  Reject
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: SUGGESTIONS -->
+        <div class="tab-pane suggestions-pane" *ngIf="activeTab === 'suggestions'">
+          <div class="pane-header">
+            <h2>Pending Proposals</h2>
+            <p>Review suggestions sent by your team members.</p>
+          </div>
+          
+          <div class="proposals-grid">
+            <div *ngIf="proposals.length === 0" class="empty-state">
+              <div class="empty-icon">📂</div>
+              <h3>No proposals</h3>
+              <p>Everything is up to date! New suggestions will appear here.</p>
+            </div>
+            
+            <div *ngFor="let p of proposals" class="proposal-card">
+              <div class="proposal-header">
+                <span class="member-badge">{{ p.member?.nomPrenom || 'Membre' }}</span>
+                <span class="block-badge">{{ getBlockLabel(p.blockName) }}</span>
+              </div>
+              <div class="proposal-diff">
+                <div class="old-val"><span>Ancien:</span> {{ p.oldValue || '(vide)' }}</div>
+                <div class="new-val"><span>Nouveau:</span> {{ p.newValue }}</div>
+              </div>
+              <div class="proposal-footer">
+                <button class="btn-reject" (click)="handleProposal(p, 'REJECTED')">Rejeter</button>
+                <button class="btn-approve" (click)="handleProposal(p, 'APPROVED')">Approuver</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: MEMBRES -->
+        <div class="tab-pane membres-pane" *ngIf="activeTab === 'membres'">
+          <div class="pane-header">
+            <h2>Team Management</h2>
+            <p>Invite collaborators to work on your Business Model Canvas.</p>
+          </div>
+
+          <div class="invite-section">
+            <div class="invite-card">
+              <h3>Invite a new member</h3>
+              <div class="invite-form">
+                <div class="form-group">
+                  <label>Full Name</label>
+                  <input [(ngModel)]="inviteForm.nomPrenom" placeholder="John Doe">
+                </div>
+                <div class="form-group">
+                  <label>Professional Email</label>
+                  <input [(ngModel)]="inviteForm.email" placeholder="john@startup.com">
+                </div>
+                <div class="form-group">
+                  <label>Role</label>
+                  <select [(ngModel)]="inviteForm.role">
+                    <option value="Developpeur">Developer</option>
+                    <option value="Designer">Designer</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Tempsplein">Full Time</option>
+                    <option value="Freelance">Freelance</option>
+                  </select>
+                </div>
+                <button class="btn-send-invite" (click)="sendInvite()" [disabled]="isLoading">
+                  {{ isLoading ? 'Sending...' : 'Send Invitation ✨' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 4: VERSIONING -->
+        <div class="tab-pane versioning-pane" *ngIf="activeTab === 'versioning'">
+          <app-versioning [startupId]="startupId!" (versionRestored)="loadBmc()"></app-versioning>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL NOTE PERSONNALISÉ -->
+  <div class="note-modal-overlay" *ngIf="isModalOpen" (click)="closeModal()">
+    <div class="note-modal" 
+         (click)="$event.stopPropagation()"
+         [style.border-top-color]="currentBlock?.textColor"
+         [style.box-shadow]="'0 30px 60px -12px ' + currentBlock?.textColor + '33'">
+      
+      <div class="modal-header-magic">
+        <div>
+          <h3 [style.color]="currentBlock?.textColor">{{currentBlock?.title}}</h3>
+          <p class="modal-subtitle">Add a new strategic idea</p>
+        </div>
+        <button class="close-btn" (click)="closeModal()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <textarea 
+          [(ngModel)]="newNoteText" 
+          placeholder="Ex: Partnership with a local bank..." 
+          autofocus
+          (keyup.enter)="saveNote()"
+        ></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeModal()">Cancel</button>
+        <button class="btn-save" 
+                [style.background]="currentBlock?.textColor"
+                (click)="saveNote()">
+          Add to Canvas ✨
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INVITATION MODAL -->
+  <div class="note-modal-overlay" *ngIf="isInviteModalOpen" (click)="isInviteModalOpen = false">
+    <div class="note-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header-magic">
+        <h3>Invite a member</h3>
+        <button class="close-btn" (click)="isInviteModalOpen = false">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group" style="margin-bottom: 1rem;">
+          <label style="display:block;font-size:0.8rem;margin-bottom:0.4rem;font-weight:600">Full Name</label>
+          <input [(ngModel)]="inviteForm.nomPrenom" placeholder="John Doe" style="width:100%;padding:0.75rem;border:1px solid #e2e8f0;border-radius:8px">
+        </div>
+        <div class="input-group" style="margin-bottom: 1rem;">
+          <label style="display:block;font-size:0.8rem;margin-bottom:0.4rem;font-weight:600">Email</label>
+          <input [(ngModel)]="inviteForm.email" placeholder="jean@email.com" style="width:100%;padding:0.75rem;border:1px solid #e2e8f0;border-radius:8px">
+        </div>
+        <div class="input-group">
+          <label style="display:block;font-size:0.8rem;margin-bottom:0.4rem;font-weight:600">Rôle</label>
+          <select [(ngModel)]="inviteForm.role" style="width:100%;padding:0.75rem;border:1px solid #e2e8f0;border-radius:8px;background:white">
+            <option value="Developpeur">Développeur</option>
+            <option value="Designer">Designer</option>
+            <option value="Marketing">Marketing</option>
+            <option value="Tempsplein">Temps plein</option>
+            <option value="Freelance">Freelance</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="isInviteModalOpen = false">Annuler</button>
+        <button class="btn-save" (click)="sendInvite()" style="background: #3b82f6">Envoyer l'invitation ✨</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ANIMATION EMOJI ZOOM -->
+  <div class="icon-animating" *ngIf="explodingEmoji">
+    {{explodingEmoji}}
+  </div>
+
+  <div class="nav-arrow">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="7 13 12 18 17 13"/><polyline points="7 6 12 11 17 6"/></svg>
+  </div>
+
+  <!-- SWOT MODAL FULL SCREEN -->
+  <div class="swot-overlay" *ngIf="isSwotModalOpen">
+    <div class="swot-modal-content">
+      <button class="swot-close" (click)="closeSwotModal()">×</button>
+      
+      <!-- Loader State -->
+      <div class="swot-loader-container" *ngIf="swotLoading">
+        <div class="premium-loader"></div>
+        <h3>Analysing your Business Model...</h3>
+        <p>Our AI is generating a strategic SWOT analysis based on your canvas.</p>
+      </div>
+
+      <!-- Error State -->
+      <div class="swot-error-container" *ngIf="!swotLoading && swotError">
+        <div class="error-icon">⚠️</div>
+        <h3>Oups! Something went wrong</h3>
+        <p>{{ swotError }}</p>
+        <button class="btn-retry" (click)="fetchSwotAnalysis()">Try Again</button>
+      </div>
+
+      <!-- Result State -->
+      <div class="swot-results" *ngIf="!swotLoading && swotData">
+        <header class="swot-header">
+          <h1 class="swot-title">SWOT Analysis</h1>
+          
+          <div class="score-circular-wrapper">
+            <div class="circular-progress-swot" [style.background]="'conic-gradient(#7c3aed ' + (swotData.score_bmc * 3.6) + 'deg, #e5e7eb 0deg)'">
+              <div class="inner-circle-swot">
+                <span class="score-number-swot">{{ swotData.score_bmc }}%</span>
+              </div>
+            </div>
+            <p class="score-legend-swot">BMC Strategy Score</p>
+          </div>
+        </header>
+
+        <div class="swot-grid-visual">
+          <!-- Interconnecting Wavy Lines (SVG) -->
+          <svg class="interconnect-lines" viewBox="0 0 800 600" preserveAspectRatio="none">
+            <path d="M 220 180 Q 400 300 580 180" stroke="#8B6347" stroke-width="1.5" fill="none" stroke-dasharray="5,5" opacity="0.4" />
+            <path d="M 220 420 Q 400 300 580 420" stroke="#8B6347" stroke-width="1.5" fill="none" stroke-dasharray="5,5" opacity="0.4" />
+            <path d="M 220 180 Q 100 300 220 420" stroke="#8B6347" stroke-width="1.5" fill="none" stroke-dasharray="5,5" opacity="0.4" />
+            <path d="M 580 180 Q 700 300 580 420" stroke="#8B6347" stroke-width="1.5" fill="none" stroke-dasharray="5,5" opacity="0.4" />
+          </svg>
+
+          <div class="swot-quadrants">
+            <!-- STRENGTHS -->
+            <div class="quadrant strength-q">
+              <div class="quadrant-circle">
+                <div class="q-icon">⚡</div>
+                <h2>Strengths</h2>
+                <ul class="swot-list">
+                  <li *ngFor="let item of swotData.swot.forces; let i = index" [style.animation-delay]="(i * 0.1) + 's'">{{ item }}</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- WEAKNESSES -->
+            <div class="quadrant weakness-q">
+              <div class="quadrant-circle">
+                <div class="q-icon">⚠️</div>
+                <h2>Weaknesses</h2>
+                <ul class="swot-list">
+                  <li *ngFor="let item of swotData.swot.faiblesses; let i = index" [style.animation-delay]="(i * 0.1 + 0.3) + 's'">{{ item }}</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- OPPORTUNITIES -->
+            <div class="quadrant opportunity-q">
+              <div class="quadrant-circle">
+                <div class="q-icon">🚀</div>
+                <h2>Opportunities</h2>
+                <ul class="swot-list">
+                  <li *ngFor="let item of swotData.swot.opportunites; let i = index" [style.animation-delay]="(i * 0.1 + 0.6) + 's'">{{ item }}</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- THREATS -->
+            <div class="quadrant threat-q">
+              <div class="quadrant-circle">
+                <div class="q-icon">🛡️</div>
+                <h2>Threats</h2>
+                <ul class="swot-list">
+                  <li *ngFor="let item of swotData.swot.menaces; let i = index" [style.animation-delay]="(i * 0.1 + 0.9) + 's'">{{ item }}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <footer class="swot-footer-actions">
+          <button class="btn-regenerate" (click)="regenerateSwot()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+            Régénérer l'analyse
+          </button>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+</div>

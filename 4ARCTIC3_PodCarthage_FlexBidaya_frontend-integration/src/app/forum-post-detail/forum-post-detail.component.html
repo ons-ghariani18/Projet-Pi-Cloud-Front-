@@ -1,0 +1,26 @@
+<div class="wrap">
+  <button (click)="back()">Retour</button>
+  <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+  <div class="card" *ngIf="details">
+    <h2>{{ details.post.titre }}</h2>
+    <p>{{ details.post.contenu }}</p>
+    <small>Par {{ details.post.username }} | Likes: {{ details.post.likeCount }}</small>
+  </div>
+
+  <div class="card">
+    <h3>Ajouter un commentaire</h3>
+    <textarea [(ngModel)]="newComment" rows="3" placeholder="Votre commentaire"></textarea>
+    <button (click)="addComment()">Commenter</button>
+  </div>
+
+  <div class="card" *ngFor="let c of details?.comments; trackBy: trackComment">
+    <p>{{ c.contenu }}</p>
+    <div class="meta">
+      <span>{{ c.username }}</span>
+      <span>{{ c.date | date:'short' }}</span>
+      <button (click)="likeComment(c.id)">Like ({{ c.likeCount }})</button>
+      <button (click)="deleteComment(c.id)">Supprimer</button>
+    </div>
+  </div>
+</div>

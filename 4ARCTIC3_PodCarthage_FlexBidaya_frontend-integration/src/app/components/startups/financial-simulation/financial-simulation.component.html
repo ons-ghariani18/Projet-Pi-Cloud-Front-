@@ -1,0 +1,348 @@
+<div class="simulation-container">
+  
+  <!-- GAUCHE : PARAMETRES -->
+  <div class="left-col">
+    <div class="section-title left-bordered border-blue flex-header">
+      <h3>Paramètres de simulation</h3>
+      <button class="btn-exchange-trigger" (click)="openExchangeModal()">
+        💱 Exchange EUR/TND
+      </button>
+    </div>
+
+    <div class="form-group">
+      <label>Nom de la startup</label>
+      <select class="custom-select" [(ngModel)]="selectedStartupId" (change)="onStartupChange()">
+        <option [ngValue]="null" disabled>Sélectionner une startup</option>
+        <option *ngFor="let s of startups" [ngValue]="s.id">{{ s.nom }}</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Type de simulation</label>
+      <select class="custom-select" [(ngModel)]="simulationType" (change)="hasSimulated = false">
+        <option value="projection">Projection de trésorerie</option>
+        <option value="amortissement">Amortissement des crédits</option>
+        <option value="kpis">KPIs financiers</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Budget initial (TND)</label>
+      <input type="number" class="custom-input" [(ngModel)]="budgetInitial" placeholder="0">
+    </div>
+
+    <div class="form-group slider-group">
+      <div class="slider-header">
+        <label>Durée de projection</label>
+        <span class="val-badge">{{ dureeProjection }} mois</span>
+      </div>
+      <input type="range" class="custom-slider" min="1" max="60" [(ngModel)]="dureeProjection">
+    </div>
+
+    <div class="form-group slider-group">
+      <div class="slider-header">
+        <label>Charges fixes mensuelles (TND)</label>
+        <span class="val-badge">{{ chargesFixesMensuelles | number }} TND</span>
+      </div>
+      <input type="range" class="custom-slider" min="0" max="50000" step="100" [(ngModel)]="chargesFixesMensuelles">
+    </div>
+
+    <div class="form-group slider-group">
+      <div class="slider-header">
+        <label>Investissement mensuel (TND)</label>
+        <span class="val-badge">{{ investissementMensuel | number }} TND</span>
+      </div>
+      <input type="range" class="custom-slider" min="0" max="20000" step="50" [(ngModel)]="investissementMensuel">
+    </div>
+
+    <!-- CREDITS -->
+    <div class="credits-section">
+      <div class="credits-header">
+        <h4>Crédits associés</h4>
+        <button class="btn-add-credit" (click)="openCreditModal()">+ Ajouter</button>
+      </div>
+
+      <div class="credits-list">
+        <div class="credit-card" *ngFor="let c of credits">
+          <div class="c-info">
+            <span class="c-source">{{ c.source }}</span>
+            <span class="c-montant">{{ c.montant | number }} TND</span>
+            <span class="c-details">{{ c.tauxInteret }}% — {{ c.dureeMois }} mois</span>
+          </div>
+          <button class="btn-del" (click)="removeCredit(c.id)">✕</button>
+        </div>
+        <div class="no-data" *ngIf="credits.length === 0">Aucun crédit ajouté.</div>
+      </div>
+    </div>
+
+    <div class="actions-group">
+      <button class="btn-primary" (click)="lancerSimulation()" [disabled]="!selectedStartupId || loading">
+        ▶ Lancer la simulation
+      </button>
+      <button class="btn-secondary" (click)="reset()">
+        ↺ Réinitialiser
+      </button>
+    </div>
+  </div>
+
+  <!-- DROITE : RESULTATS -->
+  <div class="right-col">
+    <div class="section-title left-bordered border-green">
+      <h3>Résultats de la projection</h3>
+    </div>
+
+    <div *ngIf="loading" class="loader-container">
+      <div class="spinner"></div>
+      <p>Calcul de la simulation en cours...</p>
+    </div>
+
+    <div *ngIf="error" class="error-banner">
+      {{ error }}
+    </div>
+
+    <div *ngIf="!loading && !hasSimulated" class="empty-state">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+      <p>Veuillez lancer la simulation pour voir les résultats.</p>
+    </div>
+
+    <div class="results-content" *ngIf="!loading && hasSimulated">
+      
+      <!-- PROJECTION -->
+      <ng-container *ngIf="simulationType === 'projection'">
+        <!-- TABS -->
+        <div class="scenario-tabs">
+          <button [class.active]="activeScenario === 'pessimiste'" (click)="setScenario('pessimiste')">📉 Pessimiste (-30%)</button>
+          <button [class.active]="activeScenario === 'neutre'" (click)="setScenario('neutre')">📊 Neutre (base)</button>
+          <button [class.active]="activeScenario === 'optimiste'" (click)="setScenario('optimiste')">📈 Optimiste (+30%)</button>
+        </div>
+
+        <!-- 3 METRIC CARDS -->
+        <div class="metrics-row">
+          <div class="metric-box bg-blue">
+            <p>Solde final</p>
+            <h3>{{ tresorerieFinale | number:'1.0-0' }} TND</h3>
+          </div>
+          <div class="metric-box" [class.bg-green]="fluxNetTotal >= 0" [class.bg-red]="fluxNetTotal < 0">
+            <p>Flux net total</p>
+            <h3>{{ fluxNetTotal > 0 ? '+' : '' }}{{ fluxNetTotal | number:'1.0-0' }} TND</h3>
+          </div>
+          <div class="metric-box bg-orange">
+            <p>Score de santé</p>
+            <h3>{{ scoreSante | number:'1.0-0' }} <span class="muted">/100</span></h3>
+          </div>
+        </div>
+
+        <!-- SVG CHART -->
+        <div class="chart-wrapper">
+          <h4>PROJECTION DE TRÉSORERIE</h4>
+          <svg class="native-chart" viewBox="0 0 800 250" preserveAspectRatio="none">
+            <!-- Grid lines -->
+            <line x1="0" y1="250" x2="800" y2="250" stroke="#e2e8f0" stroke-width="1" />
+            <line x1="0" y1="187.5" x2="800" y2="187.5" stroke="#f1f5f9" stroke-width="1" />
+            <line x1="0" y1="125" x2="800" y2="125" stroke="#f1f5f9" stroke-width="1" />
+            <line x1="0" y1="62.5" x2="800" y2="62.5" stroke="#f1f5f9" stroke-width="1" />
+            <line x1="0" y1="0" x2="800" y2="0" stroke="#f1f5f9" stroke-width="1" />
+            
+            <g *ngIf="chartData">
+              <!-- Path area -->
+              <path [attr.d]="chartData.areaPath" fill="rgba(34, 197, 94, 0.1)"></path>
+              
+              <!-- Line path -->
+              <path [attr.d]="chartData.linePath" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+            </g>
+          </svg>
+          <div class="x-axis-labels">
+            <span *ngFor="let l of chartData?.labels | slice:0:10">{{ l }}</span>
+          </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="data-table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mois</th>
+                <th>MRR</th>
+                <th>Remboursements</th>
+                <th>Charges</th>
+                <th>Flux Net</th>
+                <th>Trésorerie</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of monthlyTable" [class.negative-row]="r.fluxNet < 0">
+                <td><strong>{{ r.mois }}</strong></td>
+                <td>{{ r.mrr | number:'1.0-0' }}</td>
+                <td>{{ r.remboursements | number:'1.0-0' }}</td>
+                <td>{{ r.charges | number:'1.0-0' }}</td>
+                <td class="flux-col">{{ r.fluxNet | number:'1.0-0' }}</td>
+                <td><strong>{{ r.tresorerie | number:'1.0-0' }}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+
+      <!-- AMORTISSEMENT -->
+      <ng-container *ngIf="simulationType === 'amortissement'">
+        <div *ngFor="let a of amortissementData; let i = index" class="accordion-item">
+          <div class="acc-header">
+            <h4>Crédit {{ a.credit.source }}</h4>
+            <span>{{ a.credit.montant | number }} TND · {{ a.credit.tauxInteret }}%</span>
+          </div>
+          <div class="data-table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Mois</th>
+                  <th>Annuité</th>
+                  <th>Principal</th>
+                  <th>Intérêts</th>
+                  <th>Capital restant</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let d of a.details">
+                  <td><strong>M{{ d.mois }}</strong></td>
+                  <td>{{ d.annuite | number:'1.2-2' }}</td>
+                  <td>{{ d.principal | number:'1.2-2' }}</td>
+                  <td>{{ d.interet | number:'1.2-2' }}</td>
+                  <td>{{ d.restant | number:'1.2-2' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="empty-state" *ngIf="amortissementData.length === 0">
+          <p>Aucun crédit à amortir.</p>
+        </div>
+      </ng-container>
+
+      <!-- KPIS -->
+      <ng-container *ngIf="simulationType === 'kpis'">
+        <div class="metrics-row" *ngIf="kpiData">
+          <div class="metric-box bg-purple">
+            <p>Taux d'endettement</p>
+            <h3>{{ kpiData.tauxEndettement | number:'1.1-1' }}%</h3>
+          </div>
+          <div class="metric-box bg-blue">
+            <p>Total financement</p>
+            <h3>{{ kpiData.totalFinancement | number:'1.0-0' }} TND</h3>
+          </div>
+          <div class="metric-box bg-red">
+            <p>Total intérêts payés</p>
+            <h3>{{ kpiData.totalInterets | number:'1.0-0' }} TND</h3>
+          </div>
+          <div class="metric-box bg-green">
+            <p>Nombre de crédits</p>
+            <h3>{{ kpiData.nbCredits }}</h3>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- SECTION ANALYSE IA -->
+      <div class="ai-section" *ngIf="hasSimulated">
+        <div class="ai-header">
+          <div class="ai-title-group">
+            <h3>🤖 Analyse IA — Ce que ça signifie pour vous</h3>
+            <span class="ai-badge">Powered by Ollama llama3.2</span>
+          </div>
+          <button class="btn-outline" (click)="triggerAiAnalysis()" [disabled]="isAiLoading">
+            ↻ Relancer l'analyse
+          </button>
+        </div>
+
+        <!-- État 1: Loading -->
+        <div class="ai-loading" *ngIf="isAiLoading">
+          <div class="ai-pulse">🤖</div>
+          <h4>Analyse IA en cours...</h4>
+          <p class="ai-loading-msg">{{ aiLoadingMessage }}</p>
+          <div class="ai-progress-bar">
+            <div class="ai-progress-fill"></div>
+          </div>
+        </div>
+
+        <!-- État Erreur -->
+        <div class="ai-error" *ngIf="aiError">
+          <h4>🤖 Analyse IA indisponible</h4>
+          <p>Le service d'analyse IA n'est pas accessible pour le moment. Vos résultats de simulation restent valides.</p>
+          <button class="btn-outline" (click)="triggerAiAnalysis()">↻ Réessayer</button>
+        </div>
+
+        <!-- État 2: Résultats -->
+        <div class="ai-results" *ngIf="!isAiLoading && !aiError && aiResult">
+          
+          <!-- resumeSimple (Projection & Amortissement) -->
+          <div class="ai-card ai-resume" *ngIf="simulationType === 'projection' || simulationType === 'amortissement'">
+            <p><strong>🤖 En résumé :</strong> {{ aiResult.resumeSimple }}</p>
+          </div>
+
+          <!-- Grid (Projection & KPIs) -->
+          <div class="ai-grid" *ngIf="simulationType === 'projection' || simulationType === 'kpis'">
+            <div class="ai-card ai-diag" *ngIf="aiResult.diagnostic">
+              <h5>📊 État général</h5>
+              <p>{{ aiResult.diagnostic }}</p>
+            </div>
+            <div class="ai-card ai-forts" *ngIf="aiResult.pointsForts">
+              <h5>✅ Ce qui va bien</h5>
+              <p>{{ aiResult.pointsForts }}</p>
+            </div>
+            <div class="ai-card ai-faibles" *ngIf="aiResult.pointsFaibles">
+              <h5>⚠️ Points d'attention</h5>
+              <p>{{ aiResult.pointsFaibles }}</p>
+            </div>
+          </div>
+
+          <!-- Conseil (Projection & Amortissement) -->
+          <div class="ai-card ai-conseil" *ngIf="(simulationType === 'projection' || simulationType === 'amortissement') && aiResult.conseil">
+            <h5>💡 Que faire maintenant ?</h5>
+            <p>{{ aiResult.conseil }}</p>
+          </div>
+
+          <!-- Alertes (All) -->
+          <div class="ai-card ai-alert" *ngIf="aiResult.alertes && aiResult.alertes !== 'Aucune alerte critique'">
+            <h5>🚨 Alerte importante</h5>
+            <p>{{ aiResult.alertes }}</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL AJOUT CREDIT -->
+  <div class="modal-overlay" *ngIf="showCreditModal" (click)="showCreditModal = false">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <h3>Ajouter un crédit</h3>
+      <div class="form-group">
+        <label>Montant (TND)</label>
+        <input type="number" class="custom-input" [(ngModel)]="newCredit.montant">
+      </div>
+      <div class="form-group">
+        <label>Taux d'intérêt (%)</label>
+        <input type="number" class="custom-input" [(ngModel)]="newCredit.tauxInteret">
+      </div>
+      <div class="form-group">
+        <label>Durée (mois)</label>
+        <input type="number" class="custom-input" [(ngModel)]="newCredit.dureeMois">
+      </div>
+      <div class="form-group">
+        <label>Source</label>
+        <select class="custom-select" [(ngModel)]="newCredit.source">
+          <option value="BANQUE">Banque</option>
+          <option value="INVESTISSEUR">Investisseur</option>
+          <option value="AUTOFINANCEMENT">Autofinancement</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" (click)="showCreditModal = false">Annuler</button>
+        <button class="btn-primary" (click)="addCredit()">Ajouter</button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- MODAL EXCHANGE RATE -->
+<app-exchange-rate-modal *ngIf="showExchangeModal" (close)="closeExchangeModal()"></app-exchange-rate-modal>

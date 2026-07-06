@@ -1,0 +1,42 @@
+<div class="page">
+  <div class="header">
+    <button class="back" (click)="goBack()">←</button>
+    <h2>Search</h2>
+  </div>
+
+  <div class="search-box">
+    <input
+      type="text"
+      [(ngModel)]="query"
+      (ngModelChange)="onQueryChange()"
+      placeholder="Search by name or email..."
+    />
+  </div>
+
+  <div *ngIf="error" class="error">{{ error }}</div>
+
+  <div *ngIf="loading" class="loading">Searching...</div>
+
+  <div class="results" *ngIf="!loading">
+    <div class="result" *ngFor="let u of results">
+      <div class="avatar">
+        <img *ngIf="u.profileImage" [src]="u.profileImage" [alt]="u.username" />
+        <span *ngIf="!u.profileImage">{{ avatarLetter(u.username) }}</span>
+      </div>
+
+      <div class="meta">
+        <div class="name">{{ u.username }}</div>
+        <div class="sub" *ngIf="u.email">{{ u.email }}</div>
+      </div>
+
+      <button
+        class="invite"
+        (click)="sendInvite(u.id)"
+        [disabled]="sentToUserId.has(u.id)"
+      >
+        {{ sentToUserId.has(u.id) ? 'Sent' : 'Invite' }}
+      </button>
+    </div>
+  </div>
+</div>
+

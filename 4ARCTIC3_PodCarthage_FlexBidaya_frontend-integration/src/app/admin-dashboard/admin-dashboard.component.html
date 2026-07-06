@@ -1,0 +1,332 @@
+<!-- Background avec le même style que signin/signup -->
+<div class="bg-orbs">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+<div class="grid-bg"></div>
+
+<!-- Container principal -->
+<div class="dashboard-container">
+
+  <!-- Sidebar gauche -->
+  <div class="sidebar">
+    <!-- Profile admin -->
+    <div class="profile-section">
+      <div class="profile-image">
+        <span class="avatar-placeholder">👑</span>
+      </div>
+      <div class="profile-info">
+        <div class="profile-name">Admin</div>
+        <div class="profile-status">Administrator</div>
+      </div>
+    </div>
+
+    <!-- Boutons de navigation -->
+    <div class="nav-section">
+      <button class="nav-btn" routerLink="/homeadmin">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-text">Hub Admin</span>
+      </button>
+
+      <button class="nav-btn" [class.active]="currentView === 'users'" (click)="goToUsers()">
+        <span class="nav-icon">👥</span>
+        <span class="nav-text">Users</span>
+      </button>
+
+      <button class="nav-btn" [class.active]="currentView === 'posts'" (click)="goToPosts()">
+        <span class="nav-icon">📰</span>
+        <span class="nav-text">Posts</span>
+      </button>
+
+      <button class="nav-btn" [class.active]="currentView === 'stats'" (click)="goToStats()">
+        <span class="nav-icon">📊</span>
+        <span class="nav-text">Statistics</span>
+      </button>
+    </div>
+
+    <!-- Bouton déconnexion -->
+    <div class="logout-section">
+      <button class="logout-btn" (click)="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- Contenu principal -->
+  <div class="main-content">
+
+    <!-- Section utilisateurs -->
+    <div class="section-header" *ngIf="currentView === 'users'">
+      <div class="section-header-content">
+        <h3>All Users</h3>
+        <button class="create-user-btn" (click)="toggleCreateUserForm()">
+          <span>+</span> Create User
+        </button>
+      </div>
+
+      <!-- Formulaire de création d'utilisateur -->
+      <div class="create-user-form" *ngIf="showCreateUserForm">
+        <h4>Create New User</h4>
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" [(ngModel)]="newUser.username" placeholder="Username">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" [(ngModel)]="newUser.email" placeholder="Email">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" [(ngModel)]="newUser.password" placeholder="Password">
+        </div>
+        <div class="form-actions">
+          <button class="submit-btn" (click)="createUser()">Create</button>
+          <button class="cancel-btn" (click)="toggleCreateUserForm()">Cancel</button>
+        </div>
+        <div class="error-message" *ngIf="createUserError">{{ createUserError }}</div>
+        <div class="success-message" *ngIf="createUserSuccess">{{ createUserSuccess }}</div>
+      </div>
+
+      <div class="users-grid">
+        <div class="user-card" *ngFor="let user of users" [class.is-blocked]="user.blocked">
+          <div class="user-header">
+            <div class="user-avatar">{{ user.username?.charAt(0).toUpperCase() || 'U' }}</div>
+            <div class="user-info">
+              <div class="user-name">{{ user.username }}</div>
+              <div class="user-email">{{ user.email }}</div>
+            </div>
+          </div>
+          <div class="user-roles">
+            <span class="role-badge" *ngFor="let role of user.roles">{{ role.name }}</span>
+          </div>
+          <div class="user-actions">
+            <button class="action-btn" (click)="toggleUserFriends(user)">
+              <span>View friends ({{ user.friends?.length || 0 }})</span>
+            </button>
+            <button class="block-user-btn" *ngIf="!user.blocked" (click)="blockUser(user.id)">
+              <span>🚫 Block</span>
+            </button>
+            <button class="unblock-user-btn" *ngIf="user.blocked" (click)="unblockUser(user.id)">
+              <span>✅ Unblock</span>
+            </button>
+          </div>
+          <div class="user-friends" *ngIf="selectedUser === user && showUserFriends">
+            <div class="friends-list">
+              <div class="friend-item" *ngFor="let friend of user.friends">
+                <div class="friend-avatar">{{ friend.username?.charAt(0).toUpperCase() || 'U' }}</div>
+                <div class="friend-info">
+                  <div class="friend-name">{{ friend.username }}</div>
+                  <div class="friend-email">{{ friend.email }}</div>
+                </div>
+              </div>
+              <div class="no-friends" *ngIf="!user.friends || user.friends.length === 0">
+                No friends
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="empty-message" *ngIf="!usersError && users.length === 0">
+        No users found.
+      </div>
+    </div>
+
+    <!-- Section publications -->
+    <div class="section-header" *ngIf="currentView === 'posts'">
+      <h3>All Posts</h3>
+      <p class="section-description">Moderate all posts with their comments and reactions.</p>
+    </div>
+
+    <div *ngIf="currentView === 'posts'" class="posts-section">
+      <div *ngIf="postsError" class="empty-message">{{ postsError }}</div>
+      <div class="posts-list" *ngIf="!postsError && posts.length > 0">
+        <div class="post-card" *ngFor="let post of posts">
+          <div class="post-header">
+            <div class="post-avatar">
+              <img *ngIf="post.userProfileImage" [src]="post.userProfileImage" [alt]="post.username" />
+              <span *ngIf="!post.userProfileImage">{{ (post.username || 'U').charAt(0).toUpperCase() }}</span>
+            </div>
+            <div class="post-info">
+              <div class="post-author">{{ post.username || 'Unknown user' }}</div>
+              <div class="post-date">{{ post.dateCreation | date:'short' }}</div>
+            </div>
+            <button class="delete-post-btn" (click)="deletePost(post.id)">🗑️ Delete</button>
+          </div>
+
+          <div class="post-content">
+            <h4 class="post-title" *ngIf="post.titre && post.titre !== 'Publication'">{{ post.titre }}</h4>
+            <p class="post-text">{{ post.contenu }}</p>
+            <div class="post-media" *ngIf="post.mediaUrl">
+              <img *ngIf="post.mediaType === 'image'" [src]="post.mediaUrl" alt="Media" class="post-image" />
+              <video *ngIf="post.mediaType === 'video'" [src]="post.mediaUrl" controls class="post-video" preload="auto">
+                Your browser does not support video playback.
+              </video>
+            </div>
+          </div>
+
+          <div class="post-reactions">
+            <span class="reaction-count">❤️ {{ getPostReactionCounts(post).love }}</span>
+            <span class="reaction-count">👍 {{ getPostReactionCounts(post).like }}</span>
+            <span class="reaction-count">👎 {{ getPostReactionCounts(post).dislike }}</span>
+            <span class="reaction-count">💬 {{ post.comments ? post.comments.length : 0 }} comments</span>
+            <button class="toggle-comments-btn" (click)="togglePostComments(post)">
+              {{ showComments && selectedPost === post ? 'Hide' : 'Show' }} comments
+            </button>
+          </div>
+
+          <!-- Commentaires -->
+          <div class="comments-section" *ngIf="showComments && selectedPost === post && post.comments">
+            <div class="comment" *ngFor="let comment of post.comments">
+              <div class="comment-header">
+                <div class="comment-avatar">
+                  <img *ngIf="comment.user?.profileImage" [src]="comment.user?.profileImage" [alt]="comment.user?.username" />
+                  <span *ngIf="!comment.user?.profileImage">{{ (comment.user?.username || 'U').charAt(0).toUpperCase() }}</span>
+                </div>
+                <div class="comment-info">
+                  <div class="comment-author">{{ comment.user?.username }}</div>
+                  <div class="comment-date">{{ comment.date | date:'short' }}</div>
+                </div>
+                <span class="comment-likes">👍 {{ getCommentReactionCounts(comment).like }}</span>
+              </div>
+              <div class="comment-content">{{ comment.contenu }}</div>
+            </div>
+            <div class="no-comments" *ngIf="post.comments.length === 0">
+              No comments for this post.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="empty-message" *ngIf="!postsError && posts.length === 0">
+        No posts found.
+      </div>
+    </div>
+
+    <!-- Section Statistiques -->
+    <div class="section-header" *ngIf="currentView === 'stats'">
+      <div class="section-header-content">
+        <h3>📊 Statistics</h3>
+        <button class="export-pdf-btn" (click)="exportToPDF()">
+          <span>📄</span> Export to PDF
+        </button>
+      </div>
+
+      <div class="stats-container" id="stats-to-export">
+
+        <!-- Résumé KPI -->
+        <div class="stats-summary">
+          <div class="summary-card">
+            <div class="summary-icon">🔗</div>
+            <div class="summary-value">{{ getTotalCount(loginStats) }}</div>
+            <div class="summary-label">Total logins (30d)</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon">✨</div>
+            <div class="summary-value">{{ getTotalCount(registrationStats) }}</div>
+            <div class="summary-label">New accounts (30d)</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon">👥</div>
+            <div class="summary-value">{{ users.length }}</div>
+            <div class="summary-label">Active users</div>
+          </div>
+        </div>
+
+        <!-- Courbe connexions -->
+        <div class="stats-card">
+          <div class="chart-header">
+            <div>
+              <h4>Logins per day</h4>
+              <span class="chart-subtitle">Last 30 days</span>
+            </div>
+            <div class="chart-badge login-badge">📈 Activity</div>
+          </div>
+
+          <div class="svg-chart-wrapper" *ngIf="loginStats.length > 0">
+            <svg [style.width.px]="getSvgWidth(loginStats)" [style.height.px]="260" class="line-chart-svg">
+              <defs>
+                <linearGradient id="loginGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#818cf8" stop-opacity="0.5"/>
+                  <stop offset="100%" stop-color="#818cf8" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <!-- Grid lines - alignées avec les labels -->
+              <line *ngFor="let y of getYLabels(loginStats)" x1="50" [attr.y1]="getPointY(y, loginStats)" [attr.x2]="getSvgWidth(loginStats) - 10" [attr.y2]="getPointY(y, loginStats)" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-dasharray="4,4"/>
+              <!-- Y-axis labels - très visibles -->
+              <text *ngFor="let y of getYLabels(loginStats)" x="35" [attr.y]="getPointY(y, loginStats) + 5" text-anchor="end" fill="#e0e7ff" font-size="13" font-weight="700">{{y}}</text>
+              <!-- Filled area -->
+              <polygon [attr.points]="getAreaPoints(loginStats)" fill="url(#loginGrad)"/>
+              <!-- Line - plus épaisse et lumineuse -->
+              <polyline [attr.points]="getLinePoints(loginStats)" fill="none" stroke="#818cf8" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" class="chart-line"/>
+              <!-- Points and tooltips - plus gros et visibles -->
+              <g *ngFor="let stat of loginStats; let i = index">
+                <circle [attr.cx]="getPointX(i, loginStats)" [attr.cy]="getPointY(stat.count, loginStats)" r="6" fill="#818cf8" stroke="#1e1b4b" stroke-width="2.5" class="chart-dot">
+                  <title>{{ stat.date | date:'dd/MM/yyyy' }} : {{ stat.count }} connexion(s)</title>
+                </circle>
+                <!-- X-axis labels every N points - plus visibles -->
+                <text *ngIf="shouldShowLabel(i, loginStats)" [attr.x]="getPointX(i, loginStats)" y="248" text-anchor="middle" fill="#c7d2fe" font-size="11" font-weight="500">{{ stat.date | date:'dd/MM' }}</text>
+              </g>
+              <!-- Y-axis line -->
+              <line x1="50" y1="20" x2="50" y2="220" stroke="#e0e7ff" stroke-width="2"/>
+              <!-- X-axis line -->
+              <line x1="50" y1="220" [attr.x2]="getSvgWidth(loginStats) - 10" y2="220" stroke="#e0e7ff" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="empty-chart" *ngIf="loginStats.length === 0">
+            <span class="empty-icon">📭</span>
+            <p>No login data available.</p>
+            <small>Data will appear after the first logins.</small>
+          </div>
+        </div>
+
+        <!-- Courbe inscriptions -->
+        <div class="stats-card">
+          <div class="chart-header">
+            <div>
+              <h4>Accounts created per day</h4>
+              <span class="chart-subtitle">Last 30 days</span>
+            </div>
+            <div class="chart-badge reg-badge">🚀 Growth</div>
+          </div>
+
+          <div class="svg-chart-wrapper" *ngIf="registrationStats.length > 0">
+            <svg [style.width.px]="getSvgWidth(registrationStats)" [style.height.px]="260" class="line-chart-svg">
+              <defs>
+                <linearGradient id="regGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#34d399" stop-opacity="0.5"/>
+                  <stop offset="100%" stop-color="#34d399" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <!-- Grid lines - alignées avec les labels -->
+              <line *ngFor="let y of getYLabels(registrationStats)" x1="50" [attr.y1]="getPointY(y, registrationStats)" [attr.x2]="getSvgWidth(registrationStats) - 10" [attr.y2]="getPointY(y, registrationStats)" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-dasharray="4,4"/>
+              <!-- Y-axis labels - très visibles -->
+              <text *ngFor="let y of getYLabels(registrationStats)" x="35" [attr.y]="getPointY(y, registrationStats) + 5" text-anchor="end" fill="#d1fae5" font-size="13" font-weight="700">{{y}}</text>
+              <!-- Filled area -->
+              <polygon [attr.points]="getAreaPoints(registrationStats)" fill="url(#regGrad)"/>
+              <!-- Line - plus épaisse et lumineuse -->
+              <polyline [attr.points]="getLinePoints(registrationStats)" fill="none" stroke="#34d399" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" class="chart-line"/>
+              <!-- Points -->
+              <g *ngFor="let stat of registrationStats; let i = index">
+                <circle [attr.cx]="getPointX(i, registrationStats)" [attr.cy]="getPointY(stat.count, registrationStats)" r="6" fill="#34d399" stroke="#064e3b" stroke-width="2.5" class="chart-dot">
+                  <title>{{ stat.date | date:'dd/MM/yyyy' }} : {{ stat.count }} inscription(s)</title>
+                </circle>
+                <text *ngIf="shouldShowLabel(i, registrationStats)" [attr.x]="getPointX(i, registrationStats)" y="248" text-anchor="middle" fill="#34d399" font-size="12">{{ stat.date | date:'dd/MM' }}</text>
+              </g>
+              <!-- Y-axis line -->
+              <line x1="50" y1="20" x2="50" y2="220" stroke="#d1fae5" stroke-width="2"/>
+              <!-- X-axis line -->
+              <line x1="50" y1="220" [attr.x2]="getSvgWidth(registrationStats) - 10" y2="220" stroke="#d1fae5" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="empty-chart" *ngIf="registrationStats.length === 0">
+            <span class="empty-icon">📭</span>
+            <p>No registration data available.</p>
+            <small>Data will appear after the first registrations.</small>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="error-message" *ngIf="statsError">{{ statsError }}</div>
+    </div>
+
+  </div>
+</div>

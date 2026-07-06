@@ -1,0 +1,399 @@
+<div class="live-room-page">
+
+  <!-- ── HEADER ── -->
+  <div class="room-header" style="background: white;">
+    <div class="room-meta">
+      <span class="room-theme-badge" style="background: white; color: #3b82f6; border-color: #bfdbfe;">{{ roomTheme }}</span>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <h1 class="room-title" style="color: #1e293b;">{{ roomTitle }}</h1>
+        <span *ngIf="!isEnded" class="live-dot" style="margin-left: 8px;"></span>
+        <span *ngIf="isEnded" class="live-dot replay" style="margin-left: 8px; background: #ef4444;"></span>
+        <span class="live-label" [class.live]="!isEnded" style="font-size: 12px; letter-spacing: 0.5px;">{{ isEnded ? 'REPLAY' : 'LIVE NOW' }}</span>
+        
+        <span class="divider">·</span>
+        <span style="color: #94a3b8; font-size: 14px; display: flex; align-items: center; gap: 6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          {{ participants.length }} participant(s)
+        </span>
+      </div>
+    </div>
+    <div class="room-actions">
+      <button *ngIf="!isEnded" class="btn-wb" [class.active-mode]="viewMode === 'whiteboard'" (click)="toggleWhiteboard()">
+        <span class="btn-wb-icon">{{ viewMode === 'whiteboard' ? '💬' : '📋' }}</span>
+        {{ viewMode === 'whiteboard' ? 'Chat' : 'Whiteboard' }}
+      </button>
+      <button class="btn-outline-light" (click)="shareRoom()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+        Share
+      </button>
+      <button class="btn-danger-ghost" (click)="leaveRoom()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        Leave
+      </button>
+    </div>
+  </div>
+
+  <!-- ── MAIN LAYOUT ── -->
+  <div class="room-body" style="background: #f4f7fb;">
+
+    <!-- REPLAY SECTION (if ended) -->
+    <div class="replay-section-full" *ngIf="isEnded" style="width: 100%; height: 100%; overflow-y: auto; padding: 60px 20px;">
+      <div class="replay-container" style="text-align: center; max-width: 900px; width: 100%; margin: auto;">
+        
+        <!-- Icon -->
+        <div style="display: inline-flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: 16px; background: white; color: #3b82f6; font-size: 32px; margin-bottom: 24px; border: 1px solid #bfdbfe; box-shadow: 0 4px 10px rgba(59,130,246,0.1);">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+        </div>
+        
+        <!-- Titles -->
+        <h2 style="color: #0f172a; margin-bottom: 12px; font-size: 32px; font-weight: 700;">Session Ended</h2>
+        <p style="color: #94a3b8; font-size: 16px; margin-bottom: 30px; font-weight: 500;">This session is closed. You can watch the recording below.</p>
+        
+        <!-- Buttons -->
+        <div *ngIf="recordingUrl" style="display: flex; justify-content: center; gap: 16px; margin-bottom: 40px;">
+          <button style="background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(59,130,246,0.25);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            Watch replay
+          </button>
+          <a [href]="recordingUrl" target="_blank" style="text-decoration: none; background: white; color: #3b82f6; border: 1px solid #bfdbfe; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Download
+          </a>
+        </div>
+
+        <!-- Video Player Mockup -->
+        <div *ngIf="recordingUrl" style="width: 100%; margin: 0 auto; border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); border: 1px solid #cbd5e1; background: white;">
+          <div style="background: #1e1e2f; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; gap: 8px;">
+              <div style="width: 12px; height: 12px; border-radius: 50%; background: #ff5f56;"></div>
+              <div style="width: 12px; height: 12px; border-radius: 50%; background: #ffbd2e;"></div>
+              <div style="width: 12px; height: 12px; border-radius: 50%; background: #27c93f;"></div>
+            </div>
+            <div style="background: rgba(255,255,255,0.1); color: #94a3b8; font-size: 12px; padding: 4px 16px; border-radius: 6px; font-family: monospace;">localhost:4200/live-room/{{roomTitle}}</div>
+            <div style="width: 52px;"></div>
+          </div>
+          <video [src]="recordingUrl" controls class="replay-video" style="width: 100%; display: block; outline: none; background: #000;"></video>
+        </div>
+        
+        <!-- Empty State -->
+        <div *ngIf="!recordingUrl" style="color: #1e293b; text-align: center; padding: 60px; background: white; border-radius: 16px; border: 1px dashed #cbd5e1; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+          <span style="font-size: 40px; display: block; margin-bottom: 15px; filter: grayscale(100%); opacity: 0.3;">📹</span>
+          <h3 style="margin-bottom: 8px; color: #334155; font-size: 20px;">No recording available</h3>
+          <p style="color: #64748b; font-size: 14px;">The video of this session was not saved or is not ready yet.</p>
+        </div>
+
+        <!-- Stats Cards below video -->
+        <div *ngIf="recordingUrl" style="display: flex; justify-content: center; gap: 20px; margin-top: 30px;">
+          <div style="background: white; border-radius: 12px; padding: 20px; width: 160px; box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
+            <div style="font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">{{ roomDurationMinutes }}:00</div>
+            <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Duration</div>
+          </div>
+          <div style="background: white; border-radius: 12px; padding: 20px; width: 160px; box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
+            <div style="font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">{{ participants.length }}</div>
+            <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Participant</div>
+          </div>
+          <div style="background: white; border-radius: 12px; padding: 20px; width: 160px; box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
+            <div style="font-size: 24px; font-weight: 800; color: #3b82f6; margin-bottom: 4px;">HD</div>
+            <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Quality</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- LEFT: Participants + Audio (Only if active) -->
+    <div class="room-left" *ngIf="!isEnded">
+
+      <!-- Participants -->
+      <div class="participants-section">
+        <h3 class="section-label">Participants ({{ participants.length }})</h3>
+        <div class="participants-grid">
+          <div class="participant-card" *ngFor="let p of participants"
+               [class.speaking]="p.isSpeaking" [class.muted]="p.isMuted">
+            <div class="avatar-ring">
+              <div class="avatar">{{ p.initials }}</div>
+              <div class="mic-status">
+                <span *ngIf="!p.isMuted">🎙</span>
+                <span *ngIf="p.isMuted" class="muted-icon">🔇</span>
+              </div>
+            </div>
+            <div class="p-info">
+              <span class="p-name">{{ p.nom }}</span>
+              <span class="p-role" [class.expert-badge]="p.role === 'EXPERT'">
+                {{ p.role === 'EXPERT' ? '🎓 Expert' : '🚀 Entrepreneur' }}
+              </span>
+            </div>
+            <div class="p-actions" *ngIf="isModerateur && p.id !== currentUser.id && p.role !== 'EXPERT'">
+              <button class="mute-btn" title="Mute" (click)="muterParticipant(p)">🔇</button>
+              <button class="kick-btn" title="Kick out" (click)="expulserParticipant(p)">❌</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Audio Controls -->
+      <div class="audio-controls">
+        <div class="controls-label">Audio Controls</div>
+        <div class="controls-row">
+          <div class="control-btn-wrapper">
+            <button class="control-btn mic-btn"
+              [class.active]="isMicOn"
+              [class.off]="!isMicOn"
+              [class.speaking]="isSelfSpeaking"
+              (click)="!isEnded && toggleMic()"
+              [disabled]="isEnded"
+              [title]="isEnded ? 'Session ended' : (isMicOn ? 'Click to mute mic' : 'Click to unmute mic')">
+              <span class="ctrl-icon">{{ isMicOn ? (isSelfSpeaking ? '🔴' : '🎙') : '🔇' }}</span>
+            </button>
+            <span class="ctrl-label">{{ isEnded ? 'Disabled' : (isMicOn ? (isSelfSpeaking ? 'Speaking...' : 'Mic ON') : 'Click to unmute') }}</span>
+          </div>
+          <div class="control-btn-wrapper">
+            <button class="control-btn speaker-btn" [class.active]="isSpeakerOn" (click)="toggleSpeaker()">
+              <span class="ctrl-icon">{{ isSpeakerOn ? '🔊' : '🔕' }}</span>
+            </button>
+            <span class="ctrl-label">Sound</span>
+          </div>
+          <div class="control-btn-wrapper">
+            <button class="control-btn ptt-btn" [class.pressed]="isPTTActive"
+              (mousedown)="startPTT()" (mouseup)="stopPTT()">
+              <span class="ctrl-icon">📢</span>
+            </button>
+            <span class="ctrl-label">Hold</span>
+          </div>
+          <div class="control-btn-wrapper">
+            <button class="control-btn leave-btn" (click)="leaveRoom()">
+              <span class="ctrl-icon">📵</span>
+            </button>
+            <span class="ctrl-label">Hang up</span>
+          </div>
+        </div>
+        <div class="volume-row">
+          <span>🔉</span>
+          <input type="range" min="0" max="100" [(ngModel)]="volume" class="volume-slider" />
+          <span>🔊</span>
+          <span class="volume-value">{{ volume }}%</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: Chat OU Whiteboard personnalisé (Only if active) -->
+    <div class="room-right" *ngIf="!isEnded">
+
+      <!-- ════════════════════════════════════════
+           MODE WHITEBOARD — Excalidraw + Branding FlexBidaya
+           ════════════════════════════════════════ -->
+      <div *ngIf="viewMode === 'whiteboard'" class="whiteboard-wrapper">
+
+        <!-- Toolbar FlexBidaya au-dessus de l'iframe -->
+        <div class="wb-toolbar">
+          <div class="wb-toolbar-left">
+            <span class="wb-logo">📋 Whiteboard</span>
+            <span class="wb-badge">Excalidraw · Collaborative</span>
+          </div>
+          <div class="wb-toolbar-center" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <button
+              (click)="wbTool='pen'"
+              [style.background]="wbTool==='pen' ? '#3b82f6' : '#334155'"
+              style="border:none;padding:5px 10px;border-radius:6px;color:white;cursor:pointer;font-size:12px;">
+              ✏️ Pen
+            </button>
+            <button
+              (click)="wbTool='eraser'"
+              [style.background]="wbTool==='eraser' ? '#f59e0b' : '#334155'"
+              style="border:none;padding:5px 10px;border-radius:6px;color:white;cursor:pointer;font-size:12px;">
+              🧹 Eraser
+            </button>
+            <input type="color" [(ngModel)]="wbColor"
+              style="width:28px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:0;">
+            <select [(ngModel)]="wbStrokeWidth"
+              style="background:#334155;color:white;border:1px solid #475569;border-radius:6px;padding:3px 6px;font-size:11px;">
+              <option [ngValue]="2">Thin</option>
+              <option [ngValue]="5">Normal</option>
+              <option [ngValue]="12">Thick</option>
+              <option [ngValue]="30">Very thick</option>
+            </select>
+            <button (click)="clearCanvas()"
+              style="background:#ef4444;border:none;padding:5px 10px;border-radius:6px;color:white;cursor:pointer;font-size:12px;">
+              🗑️ Clear
+            </button>
+          </div>
+          <div class="wb-toolbar-right">
+            <span class="wb-participants-bar">
+              <span *ngFor="let p of participants.slice(0,4)" class="wb-avatar-mini" [title]="p.nom">
+                {{ p.initials }}
+              </span>
+              <span *ngIf="participants.length > 4" class="wb-avatar-mini wb-avatar-more">
+                +{{ participants.length - 4 }}
+              </span>
+            </span>
+            <button class="wb-btn-open" (click)="openWhiteboardTab()">
+              ↗ Open in new tab
+            </button>
+          </div>
+        </div>
+
+        <!-- Canvas FlexBidaya natif — zéro cache, reset instantané, sync WebSocket -->
+        <div class="wb-frame-container" *ngIf="isRoomLoaded">
+          <canvas #wbCanvas class="wb-frame"
+            style="cursor:crosshair;touch-action:none;background:#ffffff;"
+            (mousedown)="wbMouseDown($event)"
+            (mousemove)="wbMouseMove($event)"
+            (mouseup)="wbMouseUp()"
+            (mouseleave)="wbMouseUp()">
+          </canvas>
+          <!-- Overlay barre inférieure brandée -->
+          <div class="wb-footer-bar">
+            <span class="wb-footer-text">
+              🔒 Private Room · Access limited to invited participants · FlexBidaya IdeaLab
+            </span>
+            <button class="wb-btn-back" (click)="toggleWhiteboard()">💬 Back to Chat</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ════════════════════════════════════════
+           MODE CHAT
+           ════════════════════════════════════════ -->
+      <ng-container *ngIf="viewMode === 'chat'">
+
+        <div class="chat-header">
+          <span class="chat-title">💬 Room Chat</span>
+          <span class="chat-rules-btn" (click)="showRules = !showRules">📜 Rules</span>
+        </div>
+
+        <!-- Rules Panel -->
+        <div class="rules-panel" *ngIf="showRules">
+          <ul>
+            <li>✅ Respect and kindness are mandatory</li>
+            <li>🚫 No spam or repetitive messages</li>
+            <li>🚫 No unverified links</li>
+            <li>🚫 No insults or harassment</li>
+            <li>⚠️ 3 warnings = automatic exclusion</li>
+            <li>🤖 AI moderation active — messages are analyzed</li>
+          </ul>
+        </div>
+
+        <!-- Bannière mode expiré -->
+        <div class="ended-chat-banner" *ngIf="isEnded" style="background: #ef4444; color: white; font-weight: bold; padding: 10px; border-radius: 8px; margin-bottom: 10px; text-align: center; animation: pulse 2s infinite;">
+          🔴 LIVE ENDED — This room has expired and entered Record mode. Interactions are disabled.
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-messages" #chatBox>
+          <div class="message" *ngFor="let msg of messages"
+               [class.own-message]="msg.isOwn"
+               [class.expert-message]="msg.userRole === 'EXPERT'"
+               [class.system-message]="msg.type === 'SYSTEM'">
+
+            <div class="msg-avatar" *ngIf="msg.type !== 'SYSTEM'">{{ msg.initials }}</div>
+            <div class="msg-content">
+              <div class="msg-meta" *ngIf="msg.type !== 'SYSTEM'">
+                <span class="msg-author">{{ msg.auteur }}</span>
+                <span class="msg-role-badge" *ngIf="msg.userRole === 'EXPERT'">🎓</span>
+                <span class="msg-time">{{ msg.heure }}</span>
+                <button class="report-btn" title="Report" (click)="signalerMessage(msg)">🚩</button>
+              </div>
+              <!-- Texte -->
+              <div class="msg-text" *ngIf="msg.type === 'TEXT'">{{ msg.contenu }}</div>
+              <!-- Code -->
+              <div class="msg-code" *ngIf="msg.type === 'CODE'">
+                <div class="code-lang">{{ msg.langage }}</div>
+                <pre><code>{{ msg.contenu }}</code></pre>
+                <button class="copy-code-btn" (click)="copierCode(msg.contenu)">📋 Copy</button>
+              </div>
+              <!-- Système -->
+              <div class="msg-system" *ngIf="msg.type === 'SYSTEM'">{{ msg.contenu }}</div>
+              <!-- Transcription vocale (Whisper) -->
+              <div class="msg-transcription" *ngIf="msg.type === 'SYSTEM_TRANSCRIPTION'">{{ msg.contenu }}</div>
+              <!-- Alerte harcèlement vocal (Ollama) -->
+              <div class="msg-voice-warning" *ngIf="msg.type === 'VOICE_WARNING'">{{ msg.contenu }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="chat-input-area" [class.disabled-area]="isEnded">
+          <div class="warning-bar" *ngIf="warningCount > 0 && !isEnded">
+            ⚠️ Warning {{ warningCount }}/3 — Respect the rules · AI moderation active
+          </div>
+          <div class="input-toolbar" *ngIf="!isEnded">
+            <button class="toolbar-btn" (click)="toggleCodeMode()" title="Share code">&lt;/&gt;</button>
+            <button class="toolbar-btn" title="Emoji">😊</button>
+          </div>
+          <!-- Mode Code -->
+          <div class="code-input-wrapper" *ngIf="isCodeMode && !isEnded">
+            <select [(ngModel)]="selectedLang" class="lang-select">
+              <option>Java</option>
+              <option>Python</option>
+              <option>JavaScript</option>
+              <option>TypeScript</option>
+              <option>SQL</option>
+            </select>
+            <textarea class="code-textarea" [(ngModel)]="codeInput" placeholder="Paste your code here..."></textarea>
+            <button class="send-code-btn" (click)="envoyerCode()">Send code</button>
+          </div>
+          <!-- Mode Texte -->
+          <div class="text-input-wrapper" *ngIf="!isCodeMode && !isEnded">
+            <input
+              type="text"
+              id="chat-input-text"
+              class="chat-input"
+              placeholder="Type your message..."
+              [(ngModel)]="messageInput"
+              (keyup.enter)="envoyerMessage()"
+              [disabled]="isMuted"
+            />
+            <button class="send-btn" (click)="envoyerMessage()" [disabled]="!messageInput.trim() || isMuted">➤</button>
+          </div>
+          <!-- Mode Record Message -->
+          <div class="text-input-wrapper record-mode-msg" *ngIf="isEnded">
+             <input type="text" class="chat-input" disabled placeholder="Input disabled (Record Mode)" />
+          </div>
+        </div>
+
+      </ng-container><!-- fin MODE CHAT -->
+
+    </div>
+  </div>
+
+  <!-- ── MODERATION PANEL ── -->
+  <div class="mod-panel" *ngIf="isModerateur && !isEnded">
+    <div class="mod-header">🛡️ Moderation Panel</div>
+    <div class="mod-stats">
+      <span>🚩 {{ signalements }} pending report(s)</span>
+      <button class="mod-btn" (click)="voirSignalements()">View</button>
+      <button class="mod-btn" style="background:rgba(99,102,241,0.25);border-color:#6366f1;color:#a5b4fc;"
+              (click)="resetWhiteboard()" title="Clears the whiteboard for everyone">
+        🔄 Reset Whiteboard
+      </button>
+
+      <!-- 📹 Bouton Enregistrement Session -->
+      <button class="mod-btn"
+        [style]="isRecording
+          ? 'background:rgba(239,68,68,0.25);border-color:#ef4444;color:#fca5a5;'
+          : 'background:rgba(16,185,129,0.25);border-color:#10b981;color:#6ee7b7;'"
+        (click)="toggleRecording()"
+        [title]="isRecording ? 'Stop recording' : 'Start recording session'">
+        {{ isRecording ? '⏹ Stop Recording' : '📹 Record Session' }}
+      </button>
+
+      <button class="mod-btn danger" (click)="fermerSalle()">🔴 Close room</button>
+    </div>
+
+    <!-- Indicateur upload en cours -->
+    <div *ngIf="recordingUploading" style="margin-top:8px;color:#fbbf24;font-size:0.8rem;text-align:center;">
+      ⏳ Saving recording...
+    </div>
+
+    <!-- Lien de téléchargement quand disponible -->
+    <div *ngIf="recordingUrl" style="margin-top:8px;text-align:center;">
+      <a [href]="recordingUrl" target="_blank" download
+         style="color:#6ee7b7;font-size:0.8rem;text-decoration:underline;">
+        💾 Download session recording
+      </a>
+    </div>
+  </div>
+
+</div>

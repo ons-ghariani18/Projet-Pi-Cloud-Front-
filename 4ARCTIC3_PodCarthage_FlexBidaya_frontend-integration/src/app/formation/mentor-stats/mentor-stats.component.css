@@ -1,0 +1,629 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+:host {
+  --bd: #f1f5f9;
+  --bg: #f8fafc;
+  --surf: #ffffff;
+  --text: #0f172a;
+  --muted: #94a3b8;
+  --sec: #64748b;
+  --r: 20px;
+  --shadow: 0 2px 14px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+/* ═══ PAGE ═══════════════════════════════════ */
+.ms-page {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  padding: 0 0 40px;
+  min-height: 100%;
+}
+
+/* ═══ KPI ROW ════════════════════════════════ */
+.ms-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.ms-kpi {
+  background: var(--surf);
+  border-radius: 16px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  box-shadow: var(--shadow);
+  border: 1.5px solid var(--bd);
+  transition: transform .2s, box-shadow .2s;
+  animation: kpi-up .45s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.ms-kpi:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .10);
+}
+
+@keyframes kpi-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px)
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0)
+  }
+}
+
+.ms-kpi-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.ms-kpi-val {
+  font-size: 1.65rem;
+  font-weight: 900;
+  color: var(--text);
+  letter-spacing: -.04em;
+  line-height: 1;
+}
+
+.ms-kpi-lbl {
+  font-size: .64rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin-top: 4px;
+}
+
+/* ═══ GRID ═══════════════════════════════════ */
+.ms-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 16px;
+  position: relative;
+}
+
+.ms-hidden {
+  display: none !important;
+}
+
+/* Overlay */
+.ms-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(248, 250, 252, .92);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: .9rem;
+  border-radius: var(--r);
+  grid-column: 1/-1;
+}
+
+.ms-spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ═══ CARD ═══════════════════════════════════ */
+.ms-card {
+  background: var(--surf);
+  border-radius: var(--r);
+  border: 1.5px solid var(--bd);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  animation: card-in .5s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: scale(.97) translateY(8px)
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0)
+  }
+}
+
+/* Grid placement */
+.c-line {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.c-statut {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.c-categ {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.c-bar {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.c-wide {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.c-narrow {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+/* Légende groupée barres */
+.ms-grp-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 6px 18px 18px;
+}
+
+.ms-gl-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--sec);
+}
+
+.ms-gl-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* Card head */
+.ms-card-head {
+  padding: 18px 20px 10px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ms-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ms-card-title {
+  font-size: .92rem;
+  font-weight: 800;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ms-card-sub {
+  font-size: .71rem;
+  color: var(--muted);
+  padding-left: 30px;
+}
+
+.ms-icon-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Legend */
+.ms-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .72rem;
+  color: var(--sec);
+  white-space: nowrap;
+}
+
+.ms-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* ═══ CANVAS BOX ════════════════════════════
+   responsive:false → Chart.js utilise les
+   attributs width/height du canvas directement.
+   max-width:100% = scaling visuel responsive.
+   NE PAS forcer height via CSS (conflit Chart.js)
+════════════════════════════════════════════ */
+.ms-canvas-box {
+  padding: 8px 18px 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.ms-canvas-center {
+  justify-content: center;
+  align-items: center;
+}
+
+.ms-canvas-box canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* ═══ STATUT BOTTOM ROW ══════════════════════ */
+.ms-statut-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px 18px;
+  border-top: 1px solid var(--bd);
+}
+
+.ms-stat-item {
+  flex: 1;
+  text-align: center;
+}
+
+.ms-stat-val {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: -.04em;
+}
+
+.ms-stat-lbl {
+  display: block;
+  font-size: .6rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin-top: 3px;
+}
+
+.ms-stat-sep {
+  width: 1px;
+  height: 36px;
+  background: var(--bd);
+}
+
+/* ═══ CATEG BODY ═════════════════════════════ */
+.ms-categ-body {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 20px 20px;
+}
+
+.ms-categ-donut {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ms-categ-donut canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.ms-categ-legend {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ms-categ-row {
+  display: grid;
+  grid-template-columns: 10px 1fr 28px 90px;
+  align-items: center;
+  gap: 8px;
+}
+
+.ms-cl-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ms-cl-name {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--sec);
+}
+
+.ms-cl-count {
+  font-size: .78rem;
+  font-weight: 800;
+  color: var(--text);
+  text-align: right;
+}
+
+.ms-cl-bar-bg {
+  height: 5px;
+  background: #f1f5f9;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.ms-cl-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width .8s ease;
+}
+
+/* ═══ GLOBAL BADGE ═══════════════════════════ */
+.ms-badge-global {
+  margin: 0 18px 18px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ms-bg-text {
+  font-size: .78rem;
+  font-weight: 700;
+  color: #5b21b6;
+}
+
+.ms-bg-val {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #6366f1;
+  letter-spacing: -.04em;
+}
+
+/* ═══ STUDENT TABLE ══════════════════════════ */
+.ms-badge-count {
+  background: #ede9fe;
+  color: #6366f1;
+  font-size: .72rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 99px;
+}
+
+.ms-tbl-wrap {
+  overflow-x: auto;
+}
+
+.ms-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.ms-table thead tr {
+  background: #f8fafc;
+}
+
+.ms-table th {
+  padding: 11px 18px;
+  text-align: left;
+  font-size: .64rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  border-bottom: 1px solid var(--bd);
+}
+
+.ms-table td {
+  padding: 12px 18px;
+  border-bottom: 1px solid #f8fafc;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.ms-table tbody tr:hover td {
+  background: #fafafa;
+  transition: background .15s;
+}
+
+.ms-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ms-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ms-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .7rem;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.ms-uname {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ms-ftitle {
+  color: var(--sec);
+  font-size: .82rem;
+}
+
+.ms-prog {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ms-prog-bar {
+  width: 90px;
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.ms-prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #818cf8);
+  border-radius: 3px;
+  transition: width .9s ease;
+}
+
+.ms-pct {
+  font-size: .72rem;
+  color: var(--muted);
+  font-weight: 600;
+  min-width: 32px;
+}
+
+.ms-score {
+  font-weight: 800;
+  font-size: .88rem;
+}
+
+.ms-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: .7rem;
+  font-weight: 700;
+}
+
+.ms-green {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.ms-blue {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.ms-gray {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* ═══ ERROR / EMPTY ══════════════════════════ */
+.ms-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  color: #dc2626;
+  font-weight: 600;
+  font-size: .875rem;
+  background: #fef2f2;
+  border-radius: 14px;
+  border: 1px solid #fecaca;
+  margin-bottom: 16px;
+}
+
+.ms-empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--muted);
+  font-size: .88rem;
+}
+
+/* ═══ RESPONSIVE ═════════════════════════════ */
+@media (max-width: 960px) {
+  .ms-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ms-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .c-line,
+  .c-statut,
+  .c-categ,
+  .c-bar {
+    grid-column: 1;
+  }
+
+  .c-line {
+    grid-row: 1;
+  }
+
+  .c-statut {
+    grid-row: 2;
+  }
+
+  .c-categ {
+    grid-row: 3;
+  }
+
+  .c-bar {
+    grid-row: 4;
+  }
+
+  .c-full {
+    grid-row: 5;
+  }
+
+  .ms-categ-body {
+    flex-direction: column;
+  }
+
+  .ms-categ-donut {
+    width: 160px;
+    height: 160px;
+  }
+
+  .ms-card-sub {
+    padding-left: 0;
+  }
+}

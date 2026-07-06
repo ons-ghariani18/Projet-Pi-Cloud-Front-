@@ -1,0 +1,171 @@
+<!-- src/app/features/candidature/pages/candidature-public/candidature-public.component.html -->
+
+<div class="admin-layout">
+  
+  <!-- ====== HORIZONTAL TOP NAV (PRO PREMIUM) ====== -->
+  <aside class="sidebar no-print">
+    <!-- GAUCHE : Logo -->
+    <div class="sidebar-logo">
+      <div class="logo-circle" style="width: 32px; height: 32px; background: linear-gradient(135deg, #3b82f6, #60a5fa); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+        <i class="fas fa-bolt" style="color: white;"></i>
+      </div>
+      <div style="display: flex; flex-direction: column;">
+        <h2 style="font-size: 0.9rem; font-weight: 800; letter-spacing: 0.5px; color: #1e293b; margin: 0; line-height: 1.1;">FLEXBIDAYA</h2>
+        <span style="font-size: 0.55rem; font-weight: 700; color: #3b82f6; text-transform: uppercase;">FRONT OFFICE</span>
+      </div>
+    </div>
+
+    <!-- CENTRE : Navigation -->
+    <nav class="nav-center">
+      <a class="nav-btn" routerLink="/client/opportunites">
+        <i class="fas fa-th-large"></i> Opportunités
+      </a>
+      <a class="nav-btn" routerLink="/mes-candidatures">
+        <i class="fas fa-file-alt"></i> Mes Candidatures
+      </a>
+    </nav>
+
+    <!-- DROITE : Profil & Actions -->
+    <div class="nav-right">
+      <div class="sidebar-user">
+        <div class="user-info" style="text-align: right; margin-right: 12px;">
+          <strong style="display: block; font-size: 0.75rem; color: #1e293b;">{{ username }}</strong>
+          <span style="font-size: 0.6rem; color: #94a3b8;">Candidat Vérifié</span>
+        </div>
+        <div class="user-avatar">{{ (username || 'C').charAt(0).toUpperCase() }}</div>
+      </div>
+
+      <button class="btn-logout-mini" (click)="logout()" title="Déconnexion">
+        <i class="fas fa-power-off"></i>
+      </button>
+    </div>
+  </aside>
+  
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="main-content">
+      
+      <div class="form-container">
+        
+        <!-- Bouton Retour -->
+        <button class="btn-back-link" (click)="retour()">
+          <i class="fas fa-arrow-left"></i> Retour aux détails
+        </button>
+  
+        <div class="premium-card">
+          <h2>Postuler à l'opportunité</h2>
+          <span class="card-subtitle">Veuillez compléter les informations ci-dessous pour soumettre votre dossier.</span>
+  
+          <!-- Alert Messages -->
+          <div *ngIf="errorMessage" class="alert alert-danger mb-4">
+            <i class="fas fa-exclamation-circle me-3"></i> {{ errorMessage }}
+          </div>
+          
+          <div *ngIf="successMessage" class="alert alert-success mb-4">
+            <i class="fas fa-check-circle me-3"></i> {{ successMessage }}
+          </div>
+  
+          <div *ngIf="alreadyApplied" class="alert alert-warning mb-4">
+            <i class="fas fa-info-circle me-3"></i> Vous avez déjà postulé à cette opportunité. 
+            <a routerLink="/mes-candidatures" class="fw-bold ms-2">Consulter mon dossier</a>
+          </div>
+  
+          <!-- Form -->
+          <form [formGroup]="candidatureForm" (ngSubmit)="onSubmit()" *ngIf="!successMessage && !alreadyApplied">
+            
+            <!-- Motivation Text -->
+            <div class="mb-5">
+              <label class="form-label">Pourquoi vous ? (Motivation)</label>
+              <textarea 
+                class="form-control" 
+                formControlName="motivation" 
+                placeholder="Décrivez vos points forts et votre motivation pour ce projet..."
+                [class.is-invalid]="candidatureForm.get('motivation')?.touched && candidatureForm.get('motivation')?.invalid"
+              ></textarea>
+              <div class="invalid-feedback" *ngIf="candidatureForm.get('motivation')?.errors?.['required']">
+                Ce champ est obligatoire.
+              </div>
+              <div class="invalid-feedback" *ngIf="candidatureForm.get('motivation')?.errors?.['minlength']">
+                Veuillez saisir au moins 10 caractères.
+              </div>
+            </div>
+  
+            <!-- File Uploads Section -->
+            <div class="row gx-4">
+              
+              <!-- CV -->
+              <div class="col-md-6 mb-4">
+                <label class="form-label">Votre CV (PDF)</label>
+                <div class="file-upload-box">
+                  <input type="file" id="cvInput" class="d-none" (change)="onFileSelected($event, 'cv')" accept=".pdf">
+                  <label for="cvInput" class="btn btn-sm btn-outline-primary mb-2 shadow-none" style="cursor:pointer;">
+                    <i class="fas fa-cloud-upload-alt me-2"></i> Choisir CV
+                  </label>
+                  <p class="text-muted small mb-0" *ngIf="!cvFileName">Format PDF uniquement</p>
+                  <div class="file-info" *ngIf="cvFileName">
+                    <i class="fas fa-check-circle"></i> {{ cvFileName }}
+                  </div>
+                </div>
+              </div>
+  
+              <!-- Lettre de Motivation -->
+              <div class="col-md-6 mb-4">
+                <label class="form-label">Lettre de Motivation</label>
+                <div class="file-upload-box">
+                  <input type="file" id="letterInput" class="d-none" (change)="onFileSelected($event, 'motivation')" accept=".pdf">
+                  <label for="letterInput" class="btn btn-sm btn-outline-primary mb-2 shadow-none" style="cursor:pointer;">
+                    <i class="fas fa-cloud-upload-alt me-2"></i> Choisir Lettre
+                  </label>
+                  <p class="text-muted small mb-0" *ngIf="!motivationFileName">PDF (Optionnel)</p>
+                  <div class="file-info" *ngIf="motivationFileName">
+                    <i class="fas fa-check-circle"></i> {{ motivationFileName }}
+                  </div>
+                </div>
+              </div>
+  
+              <!-- Portfolio -->
+              <div class="col-md-12 mb-4">
+                <label class="form-label">Portfolio / Travaux Additionnels</label>
+                <div class="file-upload-box" style="padding: 30px;">
+                  <input type="file" id="portfolioInput" class="d-none" (change)="onFileSelected($event, 'portfolio')" accept=".pdf,.doc,.docx">
+                  <label for="portfolioInput" class="btn btn-sm btn-outline-primary mb-2 shadow-none" style="cursor:pointer;">
+                    <i class="fas fa-folder-open me-2"></i> Sélectionner des fichiers
+                  </label>
+                  <p class="text-muted small mb-0" *ngIf="!portfolioFileName">PDF, DOCX (Optionnel)</p>
+                  <div class="file-info" *ngIf="portfolioFileName">
+                    <i class="fas fa-check-circle"></i> {{ portfolioFileName }}
+                  </div>
+                </div>
+              </div>
+            </div>
+  
+            <!-- Submit Button Section -->
+            <div class="submit-section">
+              <button type="submit" class="btn-premium-send" [disabled]="candidatureForm.invalid || !selectedCvFile || isLoading">
+                <span *ngIf="isLoading" class="spinner-border spinner-border-sm" role="status"></span>
+                <i class="fas fa-paper-plane" *ngIf="!isLoading"></i>
+                {{ isLoading ? 'Envoi en cours...' : 'Soumettre mon dossier' }}
+              </button>
+              
+              <!-- Feedback additionnel pour l'utilisateur -->
+              <p class="text-danger small mt-2" *ngIf="candidatureForm.get('motivation')?.invalid && candidatureForm.get('motivation')?.touched" style="font-weight: 600;">
+                <i class="fas fa-exclamation-triangle me-1"></i> La motivation est trop courte (min. 10 caract.).
+              </p>
+              <p class="text-danger small mt-2" *ngIf="!selectedCvFile && candidatureForm.valid" style="font-weight: 600;">
+                <i class="fas fa-file-upload me-1"></i> Veuillez sélectionner votre CV (PDF obligatoire).
+              </p>
+            </div>
+          </form>
+  
+          <!-- Section déjà postulé -->
+          <div *ngIf="alreadyApplied" class="text-center mt-2">
+            <p class="text-muted mb-4">Vous ne pouvez pas modifier une candidature déjà soumise via ce formulaire.</p>
+            <button class="btn btn-outline-primary px-4 py-2" routerLink="/mes-candidatures" style="border-radius: 10px; font-weight: 700;">
+              <i class="fas fa-external-link-alt me-2"></i> Gérer mon dossier personnel
+            </button>
+          </div>
+  
+        </div>
+      </div>
+    </main>
+  
+  </div>
