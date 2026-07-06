@@ -1,0 +1,26 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Needle -->
+  <path d="M46 58 L50 88 L54 58 Z" fill="url(#needleGrad)" stroke="#680D1D" stroke-width="5" stroke-linejoin="round"/>
+  <!-- Red Collar -->
+  <path d="M30 46 C25 46 22 50 26 55 C29 59 71 59 74 55 C78 50 75 46 70 46 Z" fill="url(#collarGrad)" stroke="#680D1D" stroke-width="5" stroke-linejoin="round"/>
+  <!-- Cap -->
+  <path d="M36 46 C37 36 32 28 36 18 C40 10 60 10 64 18 C68 28 63 36 64 46 Z" fill="url(#capGrad)" stroke="#680D1D" stroke-width="5" stroke-linejoin="round"/>
+  
+  <defs>
+    <!-- Cap Cyan Gradient -->
+    <linearGradient id="capGrad" x1="32" y1="14" x2="64" y2="46" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00e5ff"/>
+      <stop offset="100%" stop-color="#00acc1"/>
+    </linearGradient>
+    <!-- Collar Red Gradient -->
+    <linearGradient id="collarGrad" x1="26" y1="46" x2="74" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ff1744"/>
+      <stop offset="100%" stop-color="#c62828"/>
+    </linearGradient>
+    <!-- Needle Silver Gradient -->
+    <linearGradient id="needleGrad" x1="46" y1="58" x2="54" y2="88" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </linearGradient>
+  </defs>
+</svg>
