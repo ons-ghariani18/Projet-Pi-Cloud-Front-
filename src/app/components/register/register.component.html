@@ -11,11 +11,23 @@
       </div>
       <span>FLEXBIDAYA</span>
     </div>
-    
+
     <div class="header">
       <h1>Inscription</h1>
       <p>Créez votre compte pour rejoindre l'aventure</p>
     </div>
+
+    <!-- ===== PANNEAU DE DEBUG TEMPORAIRE - à retirer une fois le bug trouvé ===== -->
+    <div style="background:#fff3cd;border:1px solid #ffc107;padding:12px;margin-bottom:15px;font-size:12px;border-radius:6px;">
+      <strong>🔍 DEBUG - Formulaire invalide : {{ registerForm.invalid }}</strong><br>
+      <div *ngIf="registerForm.errors">Erreur groupe : {{ registerForm.errors | json }}</div>
+      <div *ngFor="let f of ['username','email','password','confirmPassword','tel','role','startupDescription','domaine','organisation']">
+        <ng-container *ngIf="registerForm.get(f)?.invalid">
+          ❌ <strong>{{ f }}</strong> : {{ registerForm.get(f)?.errors | json }}
+        </ng-container>
+      </div>
+    </div>
+    <!-- ===== FIN PANNEAU DEBUG ===== -->
 
     <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
       <div class="form-row">
@@ -25,6 +37,9 @@
             <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             <input type="text" formControlName="username" placeholder="Pseudo" />
           </div>
+          <small class="field-error" *ngIf="registerForm.get('username')?.touched && registerForm.get('username')?.invalid">
+            Pseudo requis (min. 3 caractères)
+          </small>
         </div>
         <div class="form-group">
           <label>Email</label>
@@ -32,6 +47,9 @@
             <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
             <input type="email" formControlName="email" placeholder="Email" />
           </div>
+          <small class="field-error" *ngIf="registerForm.get('email')?.touched && registerForm.get('email')?.invalid">
+            Email invalide
+          </small>
         </div>
       </div>
 
@@ -54,16 +72,22 @@
               <option value="organisateur">Organisateur</option>
             </select>
           </div>
+          <small class="field-error" *ngIf="registerForm.get('role')?.touched && registerForm.get('role')?.invalid">
+            Rôle requis
+          </small>
         </div>
       </div>
 
-      <!-- Specific fields for Roles -->
+      <!-- Champs spécifiques par rôle -->
       <div class="form-group" *ngIf="selectedRole === 'entrepreneur'" style="margin-bottom: 20px;">
         <label>Description de la startup</label>
         <div class="input-wrapper">
           <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
           <input type="text" formControlName="startupDescription" placeholder="Parlez-nous de votre projet..." />
         </div>
+        <small class="field-error" *ngIf="registerForm.get('startupDescription')?.touched && registerForm.get('startupDescription')?.invalid">
+          Description requise
+        </small>
       </div>
 
       <div class="form-group" *ngIf="selectedRole === 'expert'" style="margin-bottom: 20px;">
@@ -72,6 +96,9 @@
           <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           <input type="text" formControlName="domaine" placeholder="Ex: Marketing, IA, Finance..." />
         </div>
+        <small class="field-error" *ngIf="registerForm.get('domaine')?.touched && registerForm.get('domaine')?.invalid">
+          Domaine requis
+        </small>
       </div>
 
       <div class="form-group" *ngIf="selectedRole === 'organisateur'" style="margin-bottom: 20px;">
@@ -80,8 +107,10 @@
           <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3z"/></svg>
           <input type="text" formControlName="organisation" placeholder="Ex: Technopark, Incubateur..." />
         </div>
+        <small class="field-error" *ngIf="registerForm.get('organisation')?.touched && registerForm.get('organisation')?.invalid">
+          Nom d'organisation requis
+        </small>
       </div>
-
 
       <div class="form-row">
         <div class="form-group">
@@ -90,6 +119,9 @@
             <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             <input type="password" formControlName="password" placeholder="••••••••" />
           </div>
+          <small class="field-error" *ngIf="registerForm.get('password')?.touched && registerForm.get('password')?.invalid">
+            Minimum 6 caractères
+          </small>
         </div>
         <div class="form-group">
           <label>Confirmation</label>
@@ -97,6 +129,9 @@
             <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             <input type="password" formControlName="confirmPassword" placeholder="••••••••" />
           </div>
+          <small class="field-error" *ngIf="registerForm.errors?.['mismatch'] && registerForm.get('confirmPassword')?.touched">
+            Les mots de passe ne correspondent pas
+          </small>
         </div>
       </div>
 
