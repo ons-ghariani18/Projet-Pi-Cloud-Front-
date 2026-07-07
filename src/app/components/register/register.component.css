@@ -27,6 +27,13 @@
   animation: cardEntry 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.field-error {
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+}
+
 @keyframes cardEntry { from { opacity: 0; transform: scale(0.98) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
 .logo { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 30px; }
